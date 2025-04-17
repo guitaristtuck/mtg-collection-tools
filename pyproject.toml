@@ -1,0 +1,52 @@
+[project]
+name = "mtg-collection-tools"
+version = "0.1.0"
+description = "Collection of Magic The Gathering tools for managing a digital collection"
+authors = [
+    {name = "Tucker Yates"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "typer (>=0.15.2,<0.16.0)",
+    "requests (>=2.32.3,<3.0.0)",
+    "pydantic (>=2.11.3,<3.0.0)",
+    "pydantic-settings (>=2.8.1,<3.0.0)"
+]
+
+[project.scripts]
+mtg = "mtg_collection_tools.main:app"
+
+[tool.poetry]
+packages = [
+  { include = "mtg_collection_tools" }
+]
+
+# Configure ruff
+[tool.ruff]
+lint.select = ["F", "E", "C90", "I", "N", "D", "ASYNC", "S", "A", "COM", "PIE", "PYI", "SLF", "TID", "PERF", "RUF"]
+
+lint.ignore = [
+  "D107",    # missing-type-self
+  "PLR0913", # Too many arguments to function call
+  "D104",    # Missing docstring in public package
+  "D100",    # Missing docstring in public module
+  "S101",    # use of assert detected
+  "D203",    # no blank line before class
+  "D212",
+  "E501",    # line length
+  "COM812",  # trailing comma, recommended to turn off with ruff formatter
+]
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = ['pydantic.field_validator']
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+ruff = "^0.11.5"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

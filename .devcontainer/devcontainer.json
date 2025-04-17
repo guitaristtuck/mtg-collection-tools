@@ -1,0 +1,114 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/python-3
+{
+    "name": "Python 3",
+    "build": {
+      "dockerfile": "Dockerfile",
+      "context": "..",
+      "args": {
+        "PYTHON_VERSION": "3.12",
+        "POETRY_VERSION": "2.1.2"
+      }
+    },
+    "mounts": [
+        "source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly,type=bind",
+        "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.analysis.typeCheckingMode": "basic",
+                "python.defaultInterpreterPath": "/root/.cache/pypoetry/virtualenvs/mtg-collection-tools",
+                "[python]": {
+                    "editor.defaultFormatter": "charliemarsh.ruff",
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": "explicit",
+                        "source.unusedImports": "explicit"
+                    }
+                }
+            },
+            "python.venvFolders": ["/root/.cache/pypoetry/virtualenvs"],
+            "python.testing.pytestArgs": [
+                "--cov",
+                "--cov-report=xml:tests/reports/coverage.xml",
+                "--junitxml=tests/reports/junit.xml",
+                "tests"
+            ],
+            "python.testing.cwd": "${workspaceFolder}",
+            "python.testing.pytestEnabled": true,
+            "editor.formatOnSave": true,
+            "editor.insertSpaces": true,
+            "editor.tabSize": 4,
+            "files.insertFinalNewline": true,
+            "files.trimTrailingWhitespace": false,
+            // Spelling configuration
+        "cSpell.ignorePaths": ["devcontainer.json", "pyproject.toml"],
+        "cSpell.words": [
+          "basecontainer",
+          "buildx",
+          "codeartifact",
+          "devcontainer",
+          "modelbit",
+          "obtcfg",
+          "obtcmd",
+          "prodcontainer",
+          "pypoetry",
+          "pyproject",
+          "pytest",
+          "venv",
+          "virtualenvs"
+        ],
+        // Auto-open workspace files (for multi-python projects)
+        "autoOpenWorkspace.enableAutoOpenAlwaysFirst": true,
+        // Disable automatic detection of indentation (to always override with formatter)
+        "editor.detectIndentation": false,
+        // Enable auto-formatting by language so we don't unexpectedly format files where we haven't
+        // confirmed the formatting settings
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[toml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[markdown]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[shellscript]": {
+          "editor.defaultFormatter": "foxundermoon.shell-format",
+          "editor.tabSize": 4
+        },
+        "[dockerfile]": {
+          "editor.defaultFormatter": "foxundermoon.shell-format",
+          "editor.tabSize": 4
+        },
+        "[ignore]": {
+          "editor.defaultFormatter": "foxundermoon.shell-format",
+          "editor.tabSize": 4
+        },
+        "shellformat.path": "/root/go/bin/shfmt",
+        "extensions": [
+        "detachhead.basedpyright",
+        "charliermarsh.ruff",
+        "njpwerner.autodocstring",
+        "ryanluker.vscode-coverage-gutters",
+        "mechatroner.rainbow-csv",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "streetsidesoftware.code-spell-checker",
+        "zoma.vscode-auto-open-workspace",
+        "esbenp.prettier-vscode",
+        "foxundermoon.shell-format"
+      ]
+      }
+    }
+  }
