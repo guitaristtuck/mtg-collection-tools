@@ -24,3 +24,13 @@ def refresh(
     provider.download_collection()
 
 
+@app.command(help="Annotate collection card data with scryfall data")
+def annotate(
+    ctx: typer.Context
+):
+    print("Initializing")
+    config: MTGConfig = ctx.obj["config"]
+
+    provider: BaseProvider = get_provider(config=config)
+
+    provider.annotate_collection()

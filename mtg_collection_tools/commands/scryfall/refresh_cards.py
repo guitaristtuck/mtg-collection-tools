@@ -16,7 +16,7 @@ def refresh_cards(
     api = ScryfallApi()
 
     print("Fetching Bulk Metadata")
-    oracle_cards_metadata = next((item for item in api.get_bulk_data().get("data") if item.get("type") == "oracle_cards"), None)
+    oracle_cards_metadata = next((item for item in api.get_bulk_data().get("data") if item.get("type") == "default_cards"), None)
 
     if not oracle_cards_metadata:
         print("Couldn't find a bulk data entry for type 'oracle_cards' from scryfall")

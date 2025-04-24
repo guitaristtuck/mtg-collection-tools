@@ -16,3 +16,7 @@ class BaseProvider(ABC):
     @abstractmethod
     def download_collection(self):
         pass
+
+    @abstractmethod
+    def annotate_collection(self):
+        pass
