@@ -2,7 +2,7 @@
 
 # [Choice] Python version to use
 ARG PYTHON_VERSION="3.12"
-FROM python:${PYTHON_VERSION}-slim
+FROM --platform=linux/amd64 python:${PYTHON_VERSION}-slim
 
 # Install extra packages
 RUN apt update \
