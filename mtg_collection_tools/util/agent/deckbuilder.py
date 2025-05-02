@@ -7,39 +7,13 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
+from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from mtg_collection_tools.util.models.agent import BuilderMode, DeckBuilderState
 from mtg_collection_tools.util.models.config import MTGConfig
+from mtg_collection_tools.util.models.mtg import Card, Deck
 
-
-class BuilderMode(StrEnum):
-    WORK_WITH_EXISTING_DECK = auto()
-    BUILD_NEW_DECK = auto()
-    GET_CARD_SUGGESTIONS = auto()
-    INVALID_MODE = auto()
-
-class Card(TypedDict):
-    id: str
-    name: str
-    mana_cost: str
-    cmc: float
-    type_line: str
-    oracle_text: str
-    power: str
-    toughness: str
-    loyalty: str
-    colors: list[str]
-    color_identity: list[str]
-    commander_legality: str
-    game_changer: bool
-    edhrec_rank: int
-    price: str
-
-class State(TypedDict):
-    builder_mode: BuilderMode
-    deck_list: list[Card]
-    commander: Card
-    target_bracket: int
 
 def stream_graph_updates(user_input: str, graph: StateGraph) -> None:
     for event in graph.stream({"messages": [{"role": "user", "content": user_input}]}):

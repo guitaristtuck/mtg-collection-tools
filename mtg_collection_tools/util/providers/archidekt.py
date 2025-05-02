@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 import ijson
 import requests
+from langchain.tools import tool
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -18,6 +19,8 @@ from urllib3.connection import _get_default_user_agent
 from mtg_collection_tools.util import scryfall
 from mtg_collection_tools.util.common import logging
 from mtg_collection_tools.util.common.constants import get_data_path
+from mtg_collection_tools.util.models.config import CollectionProvider
+from mtg_collection_tools.util.models.mtg import Card, Deck
 from mtg_collection_tools.util.providers.base import BaseProvider
 
 
@@ -97,6 +100,49 @@ class ArchidektProvider(BaseProvider):
                     progress.advance(task_id=task, advance=chunk_data.count("\n"))
 
         print(f"{card_count} records successfully downloaded to '{target_path}'")
+
+    @staticmethod
+    def map_card_json_to_model(card_json: dict[str, Any]) -> Card:
+        """Maps the JSON response from Archidekt to the Card model."""
+        def build_type_line(oracle_card: dict[str, Any]) -> str:
+            """Builds the type line from the card JSON."""
+            types = oracle_card.get("types",[])
+            subtypes = oracle_card.get("subTypes", [])
+            supertypes = oracle_card.get("superTypes", [])
+
+            type_part    = " ".join(supertypes + types)          # super & main types
+            subtype_part = " ".join(subtypes)                    # sub-types
+
+            if subtype_part:
+                #  both parts → “Types - Subtypes”
+                return f"{type_part} - {subtype_part}" if type_part else subtype_part
+            else:
+                #  no subtypes → just the type section
+                return type_part
+
+        oracle_card: dict[str, Any] = card_json.get("card").get("oracleCard")
+
+        # Extract the relevant fields from the JSON response
+        card_data = {
+            "id": oracle_card.get("uid"),
+            "name": oracle_card.get("name"),
+            "mana_cost": oracle_card.get("manaCost"),
+            "cmc": oracle_card.get("cmc"),
+            "type_line": build_type_line(oracle_card),
+            "oracle_text": oracle_card.get("text"),
+            "power": oracle_card.get("power"),
+            "toughness": oracle_card.get("toughness"),
+            "loyalty": oracle_card.get("loyalty"),
+            "colors": oracle_card.get("colors"),
+            "color_identity": oracle_card.get("colorIdentity"),
+            "commander_legality": oracle_card.get("legalities").get("commander"),
+            "game_changer": oracle_card.get("gameChanger"),
+            "edhrec_rank": oracle_card.get("edhrecRank"),
+            "price": str(card_json.get("card").get("prices").get("tcg")),
+        }
+
+        # Create a Card instance using the extracted data
+        return Card.model_validate(card_data)
 
     @override
     def annotate_collection(self):
@@ -189,4 +235,32 @@ class ArchidektProvider(BaseProvider):
 
         if matches != len(scryfall_ids):
             logging.error(message=f"Could not find scryfall card entries for {len(missing_ids)} scryfall IDs: {missing_ids}",fail=True)
-            
+
+    
+    @override
+    def get_deck(self, deck_id: str) -> Deck:
+        """
+        Fetch a deck from Archidekt using the provided deck ID.
+
+        Args:
+            deck_id (str): The ID of the deck to fetch.
+        Returns:
+            Deck: A Deck object containing the deck information.
+        """
+        response = requests.get(f"{self.base_url}/decks/{deck_id}/")
+
+        response.raise_for_status()
+        raw = response.json()
+
+        # commander is identified by 'commander': true in the export payload
+        commander_json = next(c for c in raw["cards"] if "Commander" in c.get("categories"))
+        commander = self.map_card_json_to_model(commander_json)
+        cards = [self.map_card_json_to_model(c) for c in raw["cards"]]
+
+        return Deck(
+            id=str(raw["id"]),
+            provider=CollectionProvider.archidekt,
+            name=raw["name"],
+            cards=cards,
+            commander=commander,
+        )
