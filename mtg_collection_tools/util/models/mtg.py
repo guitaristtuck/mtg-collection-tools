@@ -73,21 +73,21 @@ class Card(BaseModel):
 
 class Deck(BaseModel):
     """A full Commander deck with game-relevant metadata."""
-    id: str = Field(
-        ...,
+    id: str | None = Field(
+        default=None,
         description="Scryfall UUID for this deck (e.g., '0001f1ef-b957-4a55-b47f-14839cdbab6f').",
     )
     provider: CollectionProvider = Field(
-        ...,
+        default=CollectionProvider.archidekt,
         description="The collection provider this deck is associated with (e.g., 'moxfield', 'archidekt').",
     )
-    name: str = Field(..., description="Deck’s printed English name.")
+    name: str | None = Field(default=None, description="Deck’s printed English name.")
     cards: list[Card] = Field(
-        ...,
+        default=[],
         description="List of cards in the deck. Order preserved so the front-end can show the list exactly as built.",
     )
-    commander: Card = Field(
-        ...,
+    commander: Card | None = Field(
+        default=None,
         description="The card designated as the deck’s commander. Must also appear in `cards`.",
     )
 
