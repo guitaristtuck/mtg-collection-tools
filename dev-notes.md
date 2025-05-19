@@ -377,3 +377,253 @@ response:
     "game": 1
 }
 ```
+
+## Search Cards
+GET https://archidekt.com/api/cards/v2/?uids=71a5d8de-25f1-4070-a7a6-dc3f2339ce30,9ce66ebc-b39f-4b40-9d95-981629a5dd06
+response:
+```
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 69219,
+      "artist": "Christopher Rush",
+      "tcgProductId": 4435,
+      "ckFoilId": 0,
+      "ckNormalId": 19000,
+      "cmEd": "",
+      "scgSku": "SGL-MTG-HML-1-ENN",
+      "scgFoilSku": null,
+      "collectorNumber": "1",
+      "multiverseid": 3010,
+      "mtgoFoilId": 0,
+      "mtgoNormalId": 0,
+      "uid": "71a5d8de-25f1-4070-a7a6-dc3f2339ce30",
+      "displayName": null,
+      "edition": {
+        "editioncode": "hml",
+        "editionname": "Homelands",
+        "editiondate": "1995-10-01",
+        "editiontype": "expansion",
+        "mtgoCode": null
+      },
+      "flavor": "\"Though Serra has not been seen for twenty years, her Gargoyles still watch over our city and punish the guilty.\"\n—Gulsen, Abbey Matron",
+      "games": [],
+      "options": [
+        "Normal"
+      ],
+      "scryfallImageHash": "1562587734",
+      "oracleCard": {
+        "id": 11,
+        "cmc": 5,
+        "colorIdentity": [
+          "White"
+        ],
+        "colors": [
+          "White"
+        ],
+        "edhrecRank": 26966,
+        "faces": [],
+        "layout": "normal",
+        "uid": null,
+        "legalities": {
+          "alchemy": "not_legal",
+          "legacy": "legal",
+          "oldschool": "not_legal",
+          "modern": "not_legal",
+          "vintage": "legal",
+          "oathbreaker": "legal",
+          "1v1": "legal",
+          "historicbrawl": "not_legal",
+          "premodern": "legal",
+          "historic": "not_legal",
+          "commander": "legal",
+          "paupercommander": "not_legal",
+          "gladiator": "not_legal",
+          "explorer": "not_legal",
+          "brawl": "not_legal",
+          "penny": "not_legal",
+          "pioneer": "not_legal",
+          "duel": "legal",
+          "pauper": "not_legal",
+          "standard": "not_legal",
+          "future": "not_legal",
+          "predh": "legal",
+          "timeless": "not_legal",
+          "canlander": "legal"
+        },
+        "manaCost": "{2}{W}{W}{W}",
+        "manaProduction": {
+          "W": null,
+          "U": null,
+          "B": null,
+          "R": null,
+          "G": null,
+          "C": null
+        },
+        "name": "Abbey Gargoyles",
+        "power": "3",
+        "salt": 0.0,
+        "subTypes": [
+          "Gargoyle"
+        ],
+        "superTypes": [],
+        "text": "Flying, protection from red",
+        "tokens": [],
+        "toughness": "4",
+        "types": [
+          "Creature"
+        ],
+        "loyalty": null,
+        "canlanderPoints": null,
+        "defaultCategory": null,
+        "gameChanger": false,
+        "extraTurns": false,
+        "tutor": false,
+        "massLandDenial": false,
+        "twoCardComboSingelton": false,
+        "twoCardComboIds": [],
+        "atomicCombos": [],
+        "potentialCombos": []
+      },
+      "owned": 0,
+      "prices": {
+        "ck": 0.35,
+        "ckfoil": 0.0,
+        "cm": 0.11,
+        "cmfoil": 0.0,
+        "mtgo": 0.0,
+        "mtgofoil": 0.0,
+        "tcg": 0.18,
+        "tcgfoil": 0.0,
+        "scg": 0.29,
+        "scgfoil": 0.0,
+        "mp": 0.15,
+        "mpfoil": 0.0,
+        "tcgLand": 10.0,
+        "tcgLandFoil": 0.0
+      },
+      "rarity": "uncommon",
+      "globalCategories": []
+    },
+    {
+      "id": 144434,
+      "artist": "Grace Zhu",
+      "tcgProductId": 631162,
+      "ckFoilId": 0,
+      "ckNormalId": 314685,
+      "cmEd": null,
+      "scgSku": "SGL-MTG-FIC-332-ENN",
+      "scgFoilSku": null,
+      "collectorNumber": "332",
+      "multiverseid": 0,
+      "mtgoFoilId": 0,
+      "mtgoNormalId": 0,
+      "uid": "9ce66ebc-b39f-4b40-9d95-981629a5dd06",
+      "displayName": null,
+      "edition": {
+        "editioncode": "fic",
+        "editionname": "Final Fantasy Commander",
+        "editiondate": "2025-06-13",
+        "editiontype": "commander",
+        "mtgoCode": null
+      },
+      "flavor": "\"Lord Kefka's treasure the treasure... Return the treasure...\"\n—Kefka's cultists",
+      "games": [],
+      "options": [
+        "Normal",
+        "Foil"
+      ],
+      "scryfallImageHash": "1747216851",
+      "oracleCard": {
+        "id": 20089,
+        "cmc": 2,
+        "colorIdentity": [],
+        "colors": [],
+        "edhrecRank": 3,
+        "faces": [],
+        "layout": "normal",
+        "uid": null,
+        "legalities": {
+          "alchemy": "legal",
+          "legacy": "legal",
+          "oldschool": "not_legal",
+          "modern": "legal",
+          "vintage": "legal",
+          "oathbreaker": "legal",
+          "1v1": "legal",
+          "historicbrawl": "legal",
+          "premodern": "not_legal",
+          "historic": "legal",
+          "commander": "legal",
+          "paupercommander": "legal",
+          "gladiator": "legal",
+          "explorer": "legal",
+          "brawl": "legal",
+          "penny": "not_legal",
+          "pioneer": "legal",
+          "duel": "legal",
+          "pauper": "legal",
+          "standard": "not_legal",
+          "future": "not_legal",
+          "predh": "not_legal",
+          "timeless": "legal",
+          "canlander": "legal"
+        },
+        "manaCost": "{2}",
+        "manaProduction": {
+          "W": 1,
+          "U": 1,
+          "B": 1,
+          "R": 1,
+          "G": 1,
+          "C": null
+        },
+        "name": "Arcane Signet",
+        "power": "",
+        "salt": 0.82,
+        "subTypes": [],
+        "superTypes": [],
+        "text": "{T}: Add one mana of any color in your commander's color identity.",
+        "tokens": [],
+        "toughness": "",
+        "types": [
+          "Artifact"
+        ],
+        "loyalty": null,
+        "canlanderPoints": null,
+        "defaultCategory": "Ramp",
+        "gameChanger": false,
+        "extraTurns": false,
+        "tutor": false,
+        "massLandDenial": false,
+        "twoCardComboSingelton": false,
+        "twoCardComboIds": [],
+        "atomicCombos": [],
+        "potentialCombos": []
+      },
+      "owned": 0,
+      "prices": {
+        "ck": 0.59,
+        "ckfoil": 0.0,
+        "cm": 0.0,
+        "cmfoil": 0.0,
+        "mtgo": 0.0,
+        "mtgofoil": 0.0,
+        "tcg": 3.74,
+        "tcgfoil": 0.0,
+        "scg": 1.99,
+        "scgfoil": 0.0,
+        "mp": 0.0,
+        "mpfoil": 0.0,
+        "tcgLand": 0.0,
+        "tcgLandFoil": 0.0
+      },
+      "rarity": "common",
+      "globalCategories": []
+    }
+  ]
+}
+```
