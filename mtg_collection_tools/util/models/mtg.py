@@ -94,3 +94,15 @@ class Deck(BaseModel):
     model_config = {
         "extra": "forbid",   # disallow unknown keys
     }
+
+class ArchidektDeck(BaseModel):
+    name: str = Field(description="Name of the deck in archidekt")
+    id: int = Field(description="ID of the deck in archidekt")
+    private: bool = Field(description="Indicates if the deck is private or public")
+    featured: str = Field(description="URL link to jpeg art for the deck's commander")
+    customFeatured: str = Field(description="URL link to custom jpeg art for the deck")
+    viewCount: int = Field(description="Number of views for the deck")
+
+    model_config = {
+        "extra": "allow",
+    }

@@ -1,10 +1,13 @@
 from enum import StrEnum, auto
-from typing import Annotated
+from typing import Annotated, Sequence
 
+from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
+from langgraph.managed import RemainingSteps
 from pydantic import BaseModel, Field
 
 from mtg_collection_tools.util.models.mtg import Card, Deck
+from mtg_collection_tools.util.providers.base import BaseProvider
 
 
 class BuilderMode(StrEnum):
@@ -16,27 +19,43 @@ class DeckBuilderState(BaseModel):
     """
     In-memory snapshot of a deck-builder session.
     """
-    messages: Annotated[list, add_messages] = Field(
+    messages: Annotated[Sequence[BaseMessage], add_messages] = Field(
         ...,
         description="List of messages exchanged between the user and the assistant. "    
+    )
+    remaining_steps: RemainingSteps = Field(
+        default=25,
+        description="Number of steps left"
     )
     builder_mode: BuilderMode | None = Field(
         default=None,
         description="Current interaction mode of the builder engine (e.g., ADD_CARDS, "
                     "UPGRADE_DECK, SUGGEST_COMMANDER).",
     )
-    deck: Deck | None = Field(
+    builder_params: dict[str, str] = Field(
+        default={},
+        description="List of key-value pairs provided by the user to direct the deck builder agent"
+    )
+    original_deck: Deck | None = Field(
         default=None,
-        description="Deck that we are working with",
+        description="Original loaded Deck that we loaded from the user's deck provider",
+    )
+    altered_deck: Deck | None = Field(
+        default=None,
+        description="Altered Deck that we are actively working with. Any changes here are suggested by the LLM and not yet saved",
     )
     target_bracket: int | None = Field(
         default=None,
         description="Desired power / budget bracket using the offical WOTC bracket system (1–5 scale) "
                     "that guides upgrade suggestions.",
     )
-    collection_id: str = Field(
+    provider: BaseProvider = Field(
         ...,
-        description="Collection ID of your collection"
+        description="Provider object that can be used to interact with the provider API"
+    )
+    builder_step: str | None = Field(
+        default=None,
+        description="Current builder step in the graph"
     )
 
     model_config = {
