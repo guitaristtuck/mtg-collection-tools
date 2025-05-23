@@ -117,10 +117,6 @@ response:
         "customFeatured": "",
         "viewCount": 62
       },
-      {eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MDg4NzczMCwiaWF0IjoxNzQ3NDMxNzMwLCJqdGkiOiJjODQ1Mjg3NjZmOGQ0ZDQwYjAwYjJjZjdkMTg4NzIwYyIsInVzZXJfaWQiOjI0MzczMn0.3AEUd1YCrtCaOxxd1y0BcgSGhH7PhKmwRtlJnEAkkRIrd-images/dmc/af0db1d6-5cb1-4917-8e8f-69d5dc184404_art_crop.jpg",
-        "customFeatured": "",
-        "viewCount": 236
-      },
       {
         "name": "I am once again asking for you to feel the Bern",
         "id": 8611097,
@@ -181,7 +177,7 @@ response:
     "profile": {
       "birth_date": null,
       "bio": "",
-      "location": "United States",eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MDg4NzczMCwiaWF0IjoxNzQ3NDMxNzMwLCJqdGkiOiJjODQ1Mjg3NjZmOGQ0ZDQwYjAwYjJjZjdkMTg4NzIwYyIsInVzZXJfaWQiOjI0MzczMn0.3AEUd1YCrtCaOxxd1y0BcgSGhH7PhKmwRtlJnEAkkRI
+      "location": "United States",
       "is_collection_public": true,
       "contactable": false,
       "newsletterable": false,
@@ -625,5 +621,55 @@ response:
       "globalCategories": []
     }
   ]
+}
+```
+
+## Add Cards to Deck
+PATCH https://archidekt.com/api/decks/{deckID}/modifyCards/v2/
+payload:
+```
+{
+    "cards": [
+        {
+            "action": "add",
+            "cardid": "142916",
+            "categories": [
+                "Land"
+            ],
+            "patchId": "DaKKGyCMtk",
+            "modifications": {
+                "quantity": 1,
+                "modifier": "Normal",
+                "customCmc": null,
+                "companion": false,
+                "flippedDefault": false,
+                "label": ",#656565"
+            }
+        }
+    ]
+}
+```
+
+response:
+```
+{
+    "add": [
+        {
+            "deckRelationId": 2208854980,
+            "patchId": "DaKKGyCMtk",
+            "categories": [
+                "Land"
+            ],
+            "quantity": 1,
+            "modifier": "Normal",
+            "customCmc": null,
+            "companion": false,
+            "flippedDefault": false,
+            "label": ",#656565",
+            "cardId": "142916",
+            "createdAt": "2025-05-19T04:24:19.159586+00:00"
+        }
+    ],
+    "createdCategories": []
 }
 ```

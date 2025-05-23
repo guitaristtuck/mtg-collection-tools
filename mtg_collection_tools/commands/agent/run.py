@@ -18,12 +18,8 @@ app = typer.Typer()
 @app.command(help="Run the MTG collection agent")
 def run(
     ctx: typer.Context,
-    builder_mode: BuilderMode = Field(
-        description="Builder mode to use when running the agent"
-    ),
-    deck_id: str | None = Field(
-        description=f"Idendifier of your deck. Only used when builder_mode = {BuilderMode.WORK_WITH_EXISTING_DECK}"
-    )
+    builder_mode: Annotated[BuilderMode, typer.Option("--builder-mode", "-m", help="Builder mode to use when running the agent")],
+    deck_id: Annotated[str | None, typer.Option("--deck-id", "-d", help=f"Idendifier of your deck. Only used when builder_mode = {BuilderMode.WORK_WITH_EXISTING_DECK}")] = None,
 ) -> None:  
     print("Initializing")
     run_deckbuilder_agent(config=ctx.obj["config"],builder_mode=builder_mode,deck_id=deck_id)

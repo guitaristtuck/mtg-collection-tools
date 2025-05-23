@@ -16,8 +16,8 @@ from mtg_collection_tools.util.scryfall.api import ScryfallApi
 app = typer.Typer()
 
 COLLECTION_ID_HELP = {
-    CollectionProvider.archidekt.value: "For Archidekt, this can be found by logging in, navigating to 'Collection', and grabbing the numerical value from the end of the url",
-    CollectionProvider.moxfield.value: "For Moxfield, this can be found by logging in, navigating to 'Collection', selecting 'share', and grabbing the hash value from the end of the url",
+    CollectionProvider.ARCHIDEKT.value: "For Archidekt, this can be found by logging in, navigating to 'Collection', and grabbing the numerical value from the end of the url",
+    CollectionProvider.MOXFIELD.value: "For Moxfield, this can be found by logging in, navigating to 'Collection', selecting 'share', and grabbing the hash value from the end of the url",
 }
 
 @app.command(help="Initialize the cli tool")

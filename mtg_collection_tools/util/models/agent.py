@@ -19,13 +19,17 @@ class DeckBuilderState(BaseModel):
     """
     In-memory snapshot of a deck-builder session.
     """
-    messages: Annotated[Sequence[BaseMessage], add_messages] = Field(
-        ...,
+    messages: Annotated[list[BaseMessage], add_messages] = Field(
+        default_factory=list,
         description="List of messages exchanged between the user and the assistant. "    
     )
     remaining_steps: RemainingSteps = Field(
         default=25,
         description="Number of steps left"
+    )
+    is_last_step: bool = Field(
+        default=False,
+        description="Whether this is the last step in the graph execution"
     )
     builder_mode: BuilderMode | None = Field(
         default=None,
@@ -33,7 +37,7 @@ class DeckBuilderState(BaseModel):
                     "UPGRADE_DECK, SUGGEST_COMMANDER).",
     )
     builder_params: dict[str, str] = Field(
-        default={},
+        default_factory=dict,
         description="List of key-value pairs provided by the user to direct the deck builder agent"
     )
     original_deck: Deck | None = Field(
@@ -48,10 +52,6 @@ class DeckBuilderState(BaseModel):
         default=None,
         description="Desired power / budget bracket using the offical WOTC bracket system (1–5 scale) "
                     "that guides upgrade suggestions.",
-    )
-    provider: BaseProvider = Field(
-        ...,
-        description="Provider object that can be used to interact with the provider API"
     )
     builder_step: str | None = Field(
         default=None,

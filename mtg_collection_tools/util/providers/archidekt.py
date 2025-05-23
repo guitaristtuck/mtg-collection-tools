@@ -60,7 +60,7 @@ class ArchidektProvider(BaseProvider):
         # Update some useful values returned by the login endpoint
         self.collection_id = resp_json["user"]["id"]
         self.user_decks = [ArchidektDeck.model_validate(deck_json) for deck_json in resp_json["user"]["decks"]]
-        self.root_folder = resp_json["user"]["root_folder"]
+        self.root_folder = resp_json["user"]["rootFolder"]
 
     @staticmethod
     def requires_auth(func):
@@ -72,7 +72,6 @@ class ArchidektProvider(BaseProvider):
         return wrapper
 
     @override
-    @requires_auth
     def download_collection(self):
         target_path = self.data_path / "collection.csv"
 
@@ -140,7 +139,6 @@ class ArchidektProvider(BaseProvider):
         print(f"{card_count} records successfully downloaded to '{target_path}'")
 
     @staticmethod
-    @requires_auth
     def map_card_json_to_model(card_json: dict[str, Any]) -> Card:
         """Maps the JSON response from Archidekt to the Card model."""
         def build_type_line(oracle_card: dict[str, Any]) -> str:
@@ -184,7 +182,6 @@ class ArchidektProvider(BaseProvider):
         return Card.model_validate(card_data)
 
     @override
-    @requires_auth
     def annotate_collection(self):
         collection_path = self.data_path / "collection.csv"
         scryfall_path = get_data_path() / "scryfall" / "oracle_cards.json"
@@ -300,7 +297,7 @@ class ArchidektProvider(BaseProvider):
 
         return Deck(
             id=str(raw["id"]),
-            provider=CollectionProvider.archidekt,
+            provider=CollectionProvider.ARCHIDEKT,
             name=raw["name"],
             cards=cards,
             commander=commander,
@@ -437,8 +434,50 @@ class ArchidektProvider(BaseProvider):
 
         return results
 
-    # TODO: add a bulk add call
-        
+    @requires_auth
+    def add_cards_to_deck(self, deck_id: int, cards_json: list[dict]) -> dict:
+        """
+        Add the cards specified in the cards_json to the given archidekt deck.
+
+        This uses the modifyCards endpoint to do so
+
+        Args:
+            deck_id (int): Deck ID of the deck to add cards to
+            cards_json (list[dict]): List of cards to add to the given deck
+
+        Returns:
+            dict: Summary of card add actions. Can be used to determine if there were failures
+        """
+        # not sure if this needs to be unique or not
+        patch_id = "DaKKGyCMtk"
+
+        payload = {
+            "cards": [
+                {
+                    "action": "add",
+                    "cardid": str(card.get("id")),
+                    "categories": [],
+                    "patchId": patch_id,
+                    "modifications": {
+                        "quantity": 1,
+                        "modifier": "Normal",
+                        "customCmc": None,
+                        "companion": False,
+                        "flippedDefault": False,
+                        "label": ",#656565"
+                    }
+                } 
+                for card in cards_json
+            ]
+        }
+
+        response = requests.patch(
+            url=f"https://archidekt.com/api/decks/{deck_id}/modifyCards/v2/",
+            json=payload
+        )
+        response.raise_for_status()
+
+        return response.json()
 
     @override
     @requires_auth
@@ -468,10 +507,9 @@ class ArchidektProvider(BaseProvider):
         # Get the archidekt json objects for the cards we will add
         cards_json = self.get_card_json_by_scryfall_ids(ids=[card.id for card in deck.cards])
 
-        # TODO: Bulk add cards to the deck
+        _ = self.add_cards_to_deck(deck_id=deck_id,cards_json=cards_json)
 
-
-        # TODO: Return a url for the deck
+        return f"https://archidekt.com/decks/{deck_id}"
 
 
             

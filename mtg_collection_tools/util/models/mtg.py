@@ -78,7 +78,7 @@ class Deck(BaseModel):
         description="Scryfall UUID for this deck (e.g., '0001f1ef-b957-4a55-b47f-14839cdbab6f').",
     )
     provider: CollectionProvider = Field(
-        default=CollectionProvider.archidekt,
+        default=CollectionProvider.ARCHIDEKT,
         description="The collection provider this deck is associated with (e.g., 'moxfield', 'archidekt').",
     )
     name: str | None = Field(default=None, description="Deck’s printed English name.")
