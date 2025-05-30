@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from pydantic.v1.errors import NoneIsAllowedError
 
 from mtg_collection_tools.util.models.config import CollectionProvider
@@ -66,6 +66,10 @@ class Card(BaseModel):
         ...,
         description="Latest market price in USD as string to preserve formatting (e.g., '0.08').",
     )
+    quantity: int = Field(
+        default=1,
+        description="Number of copies of this card in a given deck. Defaults to 1"
+    )
 
     model_config = {
         "extra": "forbid",   # disallow unknown keys
@@ -89,6 +93,10 @@ class Deck(BaseModel):
     commander: Card | None = Field(
         default=None,
         description="The card designated as the deck’s commander. Must also appear in `cards`.",
+    )
+    partner: Card | None = Field(
+        default=None,
+        description="The card designated as the deck’s partner. Must also appear in `cards`. Not all decks have a partner.",
     )
 
     model_config = {

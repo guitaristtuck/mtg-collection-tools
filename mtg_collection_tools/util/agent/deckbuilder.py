@@ -2,7 +2,7 @@ import json
 import uuid
 from calendar import c
 from enum import StrEnum, auto
-from typing import Annotated, cast
+from typing import Annotated, Generator, Literal, cast
 
 from langchain.agents import AgentType, initialize_agent
 from langchain.chat_models import init_chat_model
@@ -39,7 +39,7 @@ def run_deckbuilder_agent(config: MTGConfig, builder_mode: BuilderMode, deck_id:
 
     match builder_mode:
         case BuilderMode.WORK_WITH_EXISTING_DECK:
-            graph = get_work_with_existing_deck_graph(config=config,provider=provider)
+            graph = get_work_with_existing_deck_graph(config=config, provider=provider)
         case BuilderMode.BUILD_NEW_DECK:
             raise NotImplementedError()
         case BuilderMode.GET_CARD_SUGGESTIONS:
@@ -47,73 +47,40 @@ def run_deckbuilder_agent(config: MTGConfig, builder_mode: BuilderMode, deck_id:
 
     graph_config: RunnableConfig = {
         "configurable": {
-            "thread_id": f"mtg-deckbuilder-{uuid.uuid4().hex}"
-        }
-    }
+            "thread_id": f"deck_builder_{provider.provider_name}_{uuid.uuid4().hex}"
+        },
+        "provider": provider
+   }
 
-    state = init_state
-    resuming = True
+    # Keep track of the current state
+    new_command = init_state
 
-    while resuming:
-        for event in graph.stream(
-            input=state,
-            config=graph_config,
-            stream_mode=["messages", "updates", "debug"],
-            subgraphs=True
-        ):
-            if isinstance(event, tuple):
-                # Handle the case where event is (namespace, mode, data)
-                if len(event) == 3:
-                    namespace, mode, data = event
-                # Handle the case where event is (mode, data)
-                else:
-                    mode, data = event
 
-                if mode == "messages":
-                    msg, metadata = data
-                    if hasattr(msg, "content") and msg.content:
-                        print(msg.content, end="", flush=True)
-                elif mode == "updates":
-                    if isinstance(data, dict):
-                        # Print tool errors if present
-                        if "error" in data:
-                            print("\n[Tool Error]:", data["error"], flush=True)
-                        # Handle interrupts
-                        if "__interrupt__" in data:
-                            print("\n")
-                            user_response = input(data["__interrupt__"][-1].value)
-                            state = Command(resume=user_response)
-                            resuming = True
-                            break
-                elif mode == "debug":
-                    # Print debug information about tool usage and state changes
-                    if isinstance(data, dict):
-                        if "node" in data:
-                            print(f"\n[Debug] Node: {data['node']}", flush=True)
-                        if "tool_input" in data:
-                            print(f"[Debug] Tool Input: {data['tool_input']}", flush=True)
-                        if "tool_output" in data:
-                            print(f"[Debug] Tool Output: {data['tool_output']}", flush=True)
-            else:
-                # Handle non-tuple events (backwards compatibility)
-                if isinstance(event, dict):
-                    if "error" in event:
-                        print("\n[Tool Error]:", event["error"], flush=True)
-                    if "__interrupt__" in event:
-                        print("\n")
-                        user_response = input(event["__interrupt__"][-1].value)
-                        state = Command(resume=user_response)
-                        resuming = True
-                        break
-        else:
-            resuming = False
-
-    final_state = graph.get_state(graph_config)
-    if hasattr(final_state, "values"):
-        final_state = final_state.values
-    
-    print("\nProcess completed successfully!")
-    return cast(DeckBuilderState, final_state)
+    while new_command:
+        # Stream the graph execution
+        print("→ sending to graph:", new_command)
+        for event in graph.stream(new_command, config=graph_config, debug=True):
+            #print("====> new event")
+            new_command = None
+            # Handle each event from the graph
+            for step_name, step_output in event.items():
+                # print(step_name + ": " + str(step_output))
+                match step_name:
+                    case "agent":
+                        if step_output.get("messages"):
+                            for message in step_output["messages"]:
+                                if isinstance(message.content, str):
+                                    print(f"🤖: {message.content}")
+                                else:
+                                    for entry in message.content:
+                                        print(f"🤖: {entry.get("text")}")
+                    case "tools":
+                        if step_output.get("messages"):
+                            for message in step_output["messages"]:
+                                if message.name != "prompt_user":
+                                    print(f"🔧({message.name})")
+                    case "__interrupt__":
+                        new_command = Command(resume=input(step_output[-1].value).strip())
 
 
 

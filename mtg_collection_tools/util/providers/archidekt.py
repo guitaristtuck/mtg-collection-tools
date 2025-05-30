@@ -176,6 +176,7 @@ class ArchidektProvider(BaseProvider):
             "game_changer": oracle_card.get("gameChanger"),
             "edhrec_rank": oracle_card.get("edhrecRank"),
             "price": str(card_json.get("card").get("prices").get("tcg")),
+            "quantity": card_json.get("quantity")
         }
 
         # Create a Card instance using the extracted data
@@ -291,8 +292,14 @@ class ArchidektProvider(BaseProvider):
         raw = response.json()
 
         # commander is identified by 'commander': true in the export payload
-        commander_json = next(c for c in raw["cards"] if "Commander" in c.get("categories"))
-        commander = self.map_card_json_to_model(commander_json)
+        commanders_json = [c for c in raw["cards"] if "Commander" in c.get("categories")]
+
+        if len(commanders_json) > 2 or len(commanders_json) == 0:
+            raise ValueError(f"Expected 1 or 2 commanders in deck {raw['name']}, but got {len(commanders_json)}")
+        
+        commander = self.map_card_json_to_model(commanders_json[0])
+        partner = self.map_card_json_to_model(commanders_json[1]) if len(commanders_json) == 2 else None
+        
         cards = [self.map_card_json_to_model(c) for c in raw["cards"]]
 
         return Deck(
@@ -301,6 +308,7 @@ class ArchidektProvider(BaseProvider):
             name=raw["name"],
             cards=cards,
             commander=commander,
+            partner=partner,
         )
 
     @override
@@ -399,28 +407,40 @@ class ArchidektProvider(BaseProvider):
 
         return response.json().get("id")
 
-    def get_card_json_by_scryfall_ids(self, ids: list[str]) -> list[dict]:
+    def get_card_json_by_scryfall_ids(self, cards: list[Card], commander_uids: list[str]) -> list[dict]:
         """
         Return a list of archidekt card json objects for the provided scryfall identifiers.
 
         Args:
-            ids (list[str]): List of scryfall identifiers
+            cards (list[Card]): List of cards
 
         Returns:
             list[dict]: list of archidekt card objects in dictionary format
         """
+        # rearrange the cards into a map of uids to quantities
+        id_quantity_map = {card.id: card.quantity for card in cards}
+
+
         results = []
         response = requests.get(
-            url=f"{self.base_url}/cards/v2/uids={','.join(ids)}"
+            url=f"{self.base_url}/cards/v2/uids={','.join(id_quantity_map.keys())}"
         )
         response.raise_for_status()
         resp_json = response.json()
 
         # raise an error if the count doesn't match the expectations
-        if len(set(ids)) != resp_json.get("count"):
-            raise Exception(f"Expected archidekt to return {len(set(ids))} unique records from the input {len(ids)} ids, but we got {resp_json.get('count')} instead.")
+        if len(set(id_quantity_map.keys())) != resp_json.get("count"):
+            raise Exception(f"Expected archidekt to return {len(set(id_quantity_map.keys()))} unique records from the input {len(id_quantity_map.keys())} ids, but we got {resp_json.get('count')} instead.")
 
-        results.extend(resp_json.get("results"))
+        results.extend([
+            {
+                "card": card,
+                "quantity": id_quantity_map.get(card.get("uid")),
+                # Set the categories to Commander if the card is a commander or partner
+                "categories": ["Commander"] if card.get("uid") in commander_uids else []
+            }
+            for card in resp_json.get("results")
+        ])
 
         # If the result is paginated, get the remaining pages
         while resp_json.get("next"):
@@ -430,7 +450,15 @@ class ArchidektProvider(BaseProvider):
             response.raise_for_status()
             resp_json = response.json()
 
-            results.extend(resp_json.get("results"))
+            results.extend([
+            {
+                "card": card,
+                "quantity": id_quantity_map.get(card.get("uid")),
+                # Set the categories to Commander if the card is a commander or partner
+                "categories": ["Commander"] if card.get("uid") in commander_uids else []
+            }
+            for card in resp_json.get("results")
+        ])
 
         return results
 
@@ -456,10 +484,10 @@ class ArchidektProvider(BaseProvider):
                 {
                     "action": "add",
                     "cardid": str(card.get("id")),
-                    "categories": [],
+                    "categories": card.get("categories"),
                     "patchId": patch_id,
                     "modifications": {
-                        "quantity": 1,
+                        "quantity": card.get("quantity"),
                         "modifier": "Normal",
                         "customCmc": None,
                         "companion": False,
@@ -505,7 +533,10 @@ class ArchidektProvider(BaseProvider):
         deck_id = self.create_deck(deck_name=deck.name,parent_folder=folder_id,description="Deck generated by mtg deckbuilder agent")
         
         # Get the archidekt json objects for the cards we will add
-        cards_json = self.get_card_json_by_scryfall_ids(ids=[card.id for card in deck.cards])
+        cards_json = self.get_card_json_by_scryfall_ids(
+            cards=deck.cards, 
+            commander_uids=[c.id for c in (deck.commander, deck.partner) if c]
+        )
 
         _ = self.add_cards_to_deck(deck_id=deck_id,cards_json=cards_json)
 
