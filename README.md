@@ -13,6 +13,7 @@ eeeh, react agent isn't working all that well. Maybe go back to the node approac
 I still have node stuff on a different branch. See here for a possible guide: https://langchain-ai.github.io/langgraph/how-tos/react-agent-from-scratch/#define-the-graph
 
 ## Deckbuilding Agent Workflow
+Adapted from: https://chatgpt.com/share/68446cf2-9570-8004-b10d-b0879d84cc16
 
 ```mermaid
 graph TD
@@ -40,5 +41,18 @@ The diagram above shows the workflow for the deckbuilding agent when working wit
 5. **Save & Final Decision**:
    - Saves deck to provider
    - User can request more revisions or end process
+
+### Communication
+
+- Non-llm nodes interact directly with the state
+- Llm nodes call a tool for making a suggestion
+- Original Deck Kept in memory, with suggestions as a simple add / cut structure
+
+### Tools
+- scryfall search: search for cards in syntax pattern
+- edhrec_rank: get edhrec rank and supporting information
+- collection_has: check if card exists in collection
+- collection search: search for cards in collection in syntax pattern
+
 
 

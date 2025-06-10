@@ -114,3 +114,8 @@ class ArchidektDeck(BaseModel):
     model_config = {
         "extra": "allow",
     }
+
+class CardSuggestion(BaseModel):
+    name: str = Field(description="Name of the card suggested")
+    quantity: int = Field(description="Quantity of the card suggested. Is positive if the card is being added, negative if the card is being removed")
+    reason: str = Field(description="Reason for the suggestion. This should be a short explanation of why the card is being added or removed")

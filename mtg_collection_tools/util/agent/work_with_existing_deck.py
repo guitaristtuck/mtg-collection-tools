@@ -8,6 +8,7 @@ from langchain_anthropic.chat_models import ChatAnthropic
 from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import (
     AIMessage,
+    BaseMessage,
     FunctionMessage,
     HumanMessage,
     SystemMessage,
@@ -29,126 +30,210 @@ from mtg_collection_tools.util.models.mtg import Deck
 from mtg_collection_tools.util.providers import BaseProvider
 
 
-def system_prompt():
-    return f"""
-You are **Commander Deck-Builder**, an expert Magic: The Gathering assistant focused on upgrading EDH (Commander) decks.
-
-## Overall Goal
-Help the user iteratively improve their existing Commander deck while respecting their card collection, budget, and competitive "bracket" goals.
-
-## Tool Schemas
-The following schemas represent the Pydantic models used in tool arguments and returns. Each schema shows the expected structure and validation rules for the corresponding model.
-
-### Deck
-```json
-{Deck.model_json_schema()}
-```
-
-## Workflow (STRICTLY FOLLOW)
-1. **Load the current deck**  
-   Use the tool `load_original_deck_to_state` to get the deck object from the provider. This will prompt the user to select a deck if one isn't already specified.
-
-2. **Gather deck building parameters**
-   Use the `prompt_user` tool to ask the following questions in sequence:
-   - "Do you have a per-card or total budget in USD? (e.g., 'single cards ≤$5', 'no budget')"
-   - "How should I weigh cards you already own? (options: 'only use collection', 'prefer collection but suggest others if clearly better', 'ignore collection')"
-   - "Where does the deck feel weak right now? (e.g., protection, removal, mana curve, land drops)"
-   - "Do you have a target bracket that you'd like your deck to perform at? See here for more info: https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-april-22-2025"
-   - "What new themes or synergies would you like to lean into?"
-
-3. **Confirm context back to the user**  
-   - Use `get_original_deck_from_state` to get the current deck
-   - Summarize the current deck's commander, key themes, and statistics (land count, colour distribution, avg. mana value, price, etc.).  
-   - Restate the deck building parameters to ensure alignment
-
-4. **Generate and refine upgrade plan**  
-   While the user is not satisfied with the plan:
-   a. Generate an upgrade plan:
-      - Produce ≤10 paired suggestions: **{{cut → add}}**.  
-      - Honour the deck building parameters provided by the user
-      - For each suggestion include a one-sentence rationale.  
-      - Explain how the overall plan addresses the user's stated parameters.
-   
-   b. Get user feedback:
-      - Use `prompt_user` to ask: "Are you satisfied with these changes? You can:
-         * Type 'yes' or 'y' to proceed with these changes
-         * Type 'no' or 'n' to request different changes
-         * Type 'quit' or 'q' to exit the builder
-         * Type 'restart' or 'r' to start over from scratch"
-      - Interpret user responses flexibly:
-         * For 'yes': accept variations like 'yes', 'y', 'sure', 'ok', 'proceed', 'continue', 'go ahead'
-         * For 'no': accept variations like 'no', 'n', 'change', 'different', 'revise', 'modify'
-         * For 'quit': accept variations like 'quit', 'q', 'exit', 'stop', 'end', 'bye'
-         * For 'restart': accept variations like 'restart', 'r', 'start over', 'begin again', 'new'
-      - If the user indicates they want changes, ask them what aspects they'd like to change
-      - If the user indicates they want to quit, end the conversation
-      - If the user indicates they want to restart, go back to step 1
-      - If the user indicates they want to proceed, continue to step 5
-
-5. **Set the altered deck in the conversation state**
-   - Start with the deck structure from `get_original_deck_from_state`
-   - Remove all cards that were in your "cuts" list
-   - Add all cards that were in your "adds" list
-   - Pass this modified deck structure to the `set_altered_deck_in_state` tool.
-
-6. **Save and confirm the altered deck**
-   - Use `save_altered_deck_from_state_to_provider` to save the changes to the provider
-   - Share the returned URL with the user
-   - Use `prompt_user` to ask: "What would you like to do next?
-      * Type 'done' or 'd' to exit the builder
-      * Type 'restart' or 'r' to start over with a new deck
-      * Type 'back' or 'b' to go back to the upgrade plan phase
-      * Type 'quit' or 'q' to exit the builder"
-   - Interpret user responses flexibly:
-      * For 'done': accept variations like 'done', 'd', 'finish', 'complete', 'end'
-      * For 'restart': accept variations like 'restart', 'r', 'start over', 'begin again', 'new'
-      * For 'back': accept variations like 'back', 'b', 'return', 'previous', 'revise'
-      * For 'quit': accept variations like 'quit', 'q', 'exit', 'stop', 'end', 'bye'
-   - If the user indicates they want to finish or quit, end the conversation
-   - If the user indicates they want to restart, go back to step 1
-   - If the user indicates they want to go back, return to step 4
-
-## User Control
-* At ANY point in the conversation, if the user indicates they want to quit (using any variation of quit/exit/stop), immediately end the conversation
-* Always wait for explicit user confirmation before proceeding to the next major step
-* If the user seems confused or asks for clarification, provide it before proceeding
-* If a user's response is ambiguous, ask for clarification before proceeding
-* If a user's response doesn't match any expected options, explain the available options and ask them to choose one
-
-## Style & Etiquette
-* Be concise but data-rich; provide card links via scryfall format when referencing cards in the upgrade plan.
-* Scryfall links should be in the format `https://scryfall.com/search?q=<card_name>&unique=cards&as=grid&order=name`. For example,
-   `Sol Ring` would have a link to `https://scryfall.com/search?q=sol+ring&unique=cards&as=grid&order=name`
-* Mention prices in USD (to two decimals) when discussing budget.  
-* Never exceed the 100-card deck limit, and respect singleton rules (basic lands exempt).  
-* If a user request conflicts with Commander legality or their stated bracket/budget, explain the conflict and propose alternatives.
-
-## Safety
-* Do not output copyrighted card text larger than 400 characters total in any single response.  
-* Do not hallucinate real-world prices; if a price is unknown, say "n/a".
-
-Begin every new conversation by following **Step 1** above.
-"""
+class BuilderStep(StrEnum):
+    LOAD_DECK = auto()
+    ASK_PARAMETERS = auto()
+    SUGGEST_UPGRADES = auto()
+    SAVE_DECK = auto()
 
 
-def get_work_with_existing_deck_graph(config: MTGConfig, provider: BaseProvider) -> CompiledGraph:
+def make_load_deck(provider: BaseProvider) -> Callable[..., DeckBuilderState]:
+    def load_deck(state: DeckBuilderState) -> DeckBuilderState:
+        # check if the user provided a deck_id already
+        if state.original_deck and state.original_deck.id:
+            state.messages.append(
+                AIMessage(
+                    f"Loading provided deck id {state.original_deck.id} from {provider.provider_name}"
+                )
+            )
+            deck_id = str(state.original_deck.id)
+        else:
+            # prompt the user what deck they want to load
+            prompt = f"Which deck would you like to load from {provider.provider_name}?"
+            deck_info = provider.list_decks()
+            for i in range(len(deck_info)):
+                prompt += f"\n\t{i + 1}. {deck_info[i][1]}"
 
-   llm = ChatAnthropic(
-      model_name="claude-3-5-sonnet-latest",
-      api_key=config.anthropic_api_key,
-      timeout=300,
-      stop=None,
-      max_tokens_to_sample=8192,
-   )
+            prompt += "\nEnter deck number from above:"
 
-   # Create the agent with the provider injected
-   agent = create_react_agent(
-      model=llm, 
-      tools=get_deck_builder_tools(builder_mode=BuilderMode.WORK_WITH_EXISTING_DECK, provider=provider),
-      prompt=system_prompt(),
-      state_schema=DeckBuilderState,
-      checkpointer=MemorySaver(),
-      name=BuilderMode.WORK_WITH_EXISTING_DECK.value,
-   )
+            while True:
+                user_input = interrupt(prompt + "\n> ")
+                user_input_int = 0
 
-   return agent
+                try:
+                    user_input_int = int(user_input) - 1
+                    if user_input_int not in range(len(deck_info)):
+                        raise ValueError()
+                    break
+                except ValueError:
+                    prompt = f"Invalid option. Please enter [{1} - {len(deck_info)}]"
+
+            deck_id = deck_info[user_input_int][0]
+
+        state.original_deck = provider.get_deck(deck_id=deck_id)
+
+        state.messages.append(
+            AIMessage(
+                name="load_deck",
+                content=(
+                    f"Loaded **{state.original_deck.name}** with commander **{state.original_deck.commander.name}**"
+                    f"({sum(card.quantity for card in state.original_deck.cards)} cards).\n\n"
+                    "Let's gather a few preferences before suggesting changes."
+                ),
+            )
+        )
+        return state
+
+    return load_deck
+
+
+PRESET_QUESTIONS: list[tuple[str, str]] = [
+    (
+        "budget",
+        "Do you have a per-card or total budget in USD? (e.g., 'single cards ≤$5', 'no budget')",
+    ),
+    (
+        "collection_weight",
+        "How should I weigh cards you already own? (options: 'only use collection', "
+        "'prefer collection but suggest others if clearly better', 'ignore collection')",
+    ),
+    (
+        "weaknesses",
+        "Where does the deck feel weak right now? (e.g., protection, removal, mana curve, land drops)",
+    ),
+    (
+        "target_bracket",
+        "Do you have a target bracket that you'd like your deck to perform at? "
+        " See here for more info: https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-april-22-2025",
+    ),
+    ("goals", "What new themes or synergies would you like to lean into?"),
+]
+
+
+def ask_parameters(state: DeckBuilderState) -> DeckBuilderState:
+    for key, question in PRESET_QUESTIONS:
+        user_input = interrupt(question + "\n> ")
+        state.builder_params[key] = user_input
+
+    return state
+
+
+def make_suggest_upgrades(llm: BaseChatModel) -> Callable[..., DeckBuilderState]:
+    def build_prompt(
+        state: DeckBuilderState,
+    ) -> list[SystemMessage | HumanMessage | BaseMessage]:
+        system_prompt = """
+            You are **Commander Deck-Builder**, an expert Magic: The Gathering assistant focused on upgrading EDH (Commander) decks.
+
+            ## Overall Goal
+            Help the user iteratively improve their existing Commander deck while respecting their card collection, budget, and competitive "bracket" goals.
+
+            ## Workflow (STRICTLY FOLLOW)
+            The User will provide a current deck list to you in the form of a Pydandic model. The user will also provide a dictionary of preferences for the deckbuilding suggestions. 
+
+            Based on this input, you should suggest a list of cards to add and remove from the deck. This should be done as a one-shot effort.
+            You should use the tools provided to you to get the information you need to make the best suggestions, and then use the save_card_suggestions 
+            tool to save the suggestions to the graph state. You should not call this tool more than once.
+
+            # Tools
+            You have access to the following tools:
+            - save_card_suggestions: Save a list of card suggestions to the graph state. This should be called once, and should be the last thing you do.
+    
+            """
+
+        return [
+            SystemMessage(content=system_prompt),
+            SystemMessage(content=f"Build Parameters: {state.builder_params}"),
+            SystemMessage(content=f"Original Deck: {state.original_deck}"),
+            SystemMessage(content=f"Previous Suggestions: {state.card_suggestions}"),
+            *state.messages[-10:],
+        ]
+
+    def suggest_upgrades(state: DeckBuilderState) -> DeckBuilderState:
+        # Create a message that includes all the context the LLM needs
+        if not state.original_deck:
+            raise ValueError("No deck loaded. Please load a deck first.")
+
+        # Build a prompt to pass to the LLM
+        prompt = build_prompt(state)
+        # Get the agent's response
+        response = llm.invoke(prompt)
+
+        # Add the response to the state
+        state.messages.append(response)
+
+        return state
+
+    return suggest_upgrades
+
+
+def make_save_deck(provider: BaseProvider) -> Callable[..., DeckBuilderState]:
+    def save_deck(state: DeckBuilderState) -> DeckBuilderState:
+        # TODO: Implement this
+        url = "http://placeholder.com"
+        state.messages.append(
+            FunctionMessage(
+                name="save_deck",
+                content=(f"Saved state to {url}"),
+            )
+        )
+        return state
+
+    return save_deck
+
+
+def router(state: DeckBuilderState) -> dict:
+    prompt = "Would you like to refine further? (q - quit / s - save)"
+
+    user_response = interrupt(prompt + "\n> ")
+
+    match user_response.lower():
+        case "q" | "quit":
+            next_step = END
+        case "s" | "save":
+            next_step = BuilderStep.SAVE_DECK
+        case _:
+            next_step = BuilderStep.SUGGEST_UPGRADES
+
+    return {"next_step": next_step}
+
+
+def get_work_with_existing_deck_graph(
+    config: MTGConfig, provider: BaseProvider
+) -> CompiledGraph:
+    llm = ChatAnthropic(
+        model_name="claude-3-5-haiku-latest",
+        api_key=config.anthropic_api_key,
+    ).bind_tools(
+        get_deck_builder_tools(
+            builder_mode=BuilderMode.WORK_WITH_EXISTING_DECK, provider=provider
+        )
+    )
+
+    builder = StateGraph(DeckBuilderState)
+
+    # Add nodes
+    builder.add_node(BuilderStep.LOAD_DECK, make_load_deck(provider=provider))
+    builder.add_node(BuilderStep.ASK_PARAMETERS, ask_parameters)
+    builder.add_node(BuilderStep.SUGGEST_UPGRADES, make_suggest_upgrades(llm=llm))
+    builder.add_node("router", router)
+    builder.add_node(BuilderStep.SAVE_DECK, make_save_deck(provider=provider))
+
+    # Add node relationships
+    builder.set_entry_point(BuilderStep.LOAD_DECK)
+    builder.add_edge(BuilderStep.LOAD_DECK, BuilderStep.ASK_PARAMETERS)
+    builder.add_edge(BuilderStep.ASK_PARAMETERS, BuilderStep.SUGGEST_UPGRADES)
+    builder.add_edge(BuilderStep.SUGGEST_UPGRADES, "router")
+    builder.add_edge(BuilderStep.SAVE_DECK, "router")
+
+    builder.add_conditional_edges(
+        "router",
+        router,
+        {
+            BuilderStep.SUGGEST_UPGRADES: BuilderStep.SUGGEST_UPGRADES,
+            BuilderStep.SAVE_DECK: BuilderStep.SAVE_DECK,
+            END: END,
+        },
+    )
+
+    return builder.compile(checkpointer=MemorySaver())

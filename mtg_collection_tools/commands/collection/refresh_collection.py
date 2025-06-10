@@ -12,10 +12,9 @@ from mtg_collection_tools.util.providers.base import BaseProvider
 
 app = typer.Typer()
 
+
 @app.command(help="Refresh collection card data")
-def refresh(
-    ctx: typer.Context
-):
+def refresh(ctx: typer.Context):
     print("Initializing")
     config: MTGConfig = ctx.obj["config"]
 
@@ -25,9 +24,7 @@ def refresh(
 
 
 @app.command(help="Annotate collection card data with scryfall data")
-def annotate(
-    ctx: typer.Context
-):
+def annotate(ctx: typer.Context):
     print("Initializing")
     config: MTGConfig = ctx.obj["config"]
 

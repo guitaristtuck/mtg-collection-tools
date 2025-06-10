@@ -6,7 +6,7 @@ from langgraph.graph.message import add_messages
 from langgraph.managed import RemainingSteps
 from pydantic import BaseModel, Field
 
-from mtg_collection_tools.util.models.mtg import Card, Deck
+from mtg_collection_tools.util.models.mtg import Card, CardSuggestion, Deck
 from mtg_collection_tools.util.providers.base import BaseProvider
 
 
@@ -44,18 +44,9 @@ class DeckBuilderState(BaseModel):
         default=None,
         description="Original loaded Deck that we loaded from the user's deck provider",
     )
-    altered_deck: Deck | None = Field(
-        default=None,
-        description="Altered Deck that we are actively working with. Any changes here are suggested by the LLM and not yet saved",
-    )
-    target_bracket: int | None = Field(
-        default=None,
-        description="Desired power / budget bracket using the offical WOTC bracket system (1–5 scale) "
-                    "that guides upgrade suggestions.",
-    )
-    builder_step: str | None = Field(
-        default=None,
-        description="Current builder step in the graph"
+    card_suggestions: list[CardSuggestion] = Field(
+        default=[],
+        description="List of card suggestions that we are actively working with. Any changes here are suggested by the LLM and not yet saved",
     )
 
     model_config = {

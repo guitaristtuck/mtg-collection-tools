@@ -1,47 +1,46 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/python-3
 {
-    "name": "Python 3",
-    "build": {
-      "dockerfile": "Dockerfile",
-      "context": "..",
-      "args": {
-        "PYTHON_VERSION": "3.12",
-        "POETRY_VERSION": "2.1.2"
-      }
-    },
-    "mounts": [
-        "source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly,type=bind",
-        "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
-    ],
-    "customizations": {
-        "vscode": {
-            "settings": {
-                "python.analysis.typeCheckingMode": "basic",
-                "python.defaultInterpreterPath": "/root/.cache/pypoetry/virtualenvs/mtg-collection-tools",
-                "[python]": {
-                    "editor.defaultFormatter": "charliemarsh.ruff",
-                    "editor.codeActionsOnSave": {
-                        "source.organizeImports": "explicit",
-                        "source.unusedImports": "explicit"
-                    }
-                }
-            },
-            "python.venvFolders": ["/root/.cache/pypoetry/virtualenvs"],
-            "python.testing.pytestArgs": [
-                "--cov",
-                "--cov-report=xml:tests/reports/coverage.xml",
-                "--junitxml=tests/reports/junit.xml",
-                "tests"
-            ],
-            "python.testing.cwd": "${workspaceFolder}",
-            "python.testing.pytestEnabled": true,
-            "editor.formatOnSave": true,
-            "editor.insertSpaces": true,
-            "editor.tabSize": 4,
-            "files.insertFinalNewline": true,
-            "files.trimTrailingWhitespace": false,
-            // Spelling configuration
+  "name": "Python 3",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "PYTHON_VERSION": "3.12",
+      "POETRY_VERSION": "2.1.2"
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly,type=bind",
+    "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.analysis.typeCheckingMode": "basic",
+        "python.defaultInterpreterPath": "/root/.cache/pypoetry/virtualenvs/mtg-collection-tools/bin/python",
+        "[python]": {
+          "editor.defaultFormatter": "charliemarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.unusedImports": "explicit"
+          }
+        },
+        "python.venvFolders": ["/root/.cache/pypoetry/virtualenvs"],
+        "python.testing.pytestArgs": [
+          "--cov",
+          "--cov-report=xml:tests/reports/coverage.xml",
+          "--junitxml=tests/reports/junit.xml",
+          "tests"
+        ],
+        "python.testing.cwd": "${workspaceFolder}",
+        "python.testing.pytestEnabled": true,
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": false,
+        // Spelling configuration
         "cSpell.ignorePaths": ["devcontainer.json", "pyproject.toml"],
         "cSpell.words": [
           "basecontainer",
@@ -96,7 +95,8 @@
           "editor.tabSize": 4
         },
         "shellformat.path": "/root/go/bin/shfmt",
-        "extensions": [
+      },
+      "extensions": [
         "detachhead.basedpyright",
         "charliermarsh.ruff",
         "njpwerner.autodocstring",
@@ -109,6 +109,6 @@
         "esbenp.prettier-vscode",
         "foxundermoon.shell-format"
       ]
-      }
     }
   }
+}

@@ -25,16 +25,16 @@ from mtg_collection_tools.util.models.mtg import Card, Deck
 from mtg_collection_tools.util.providers import get_provider
 
 
-def run_deckbuilder_agent(config: MTGConfig, builder_mode: BuilderMode, deck_id: str | None) -> DeckBuilderState:
+def run_deckbuilder_agent(
+    config: MTGConfig, builder_mode: BuilderMode, deck_id: str | None
+) -> DeckBuilderState:
     provider = get_provider(config=config)
-    
+
     # Initialize the state. Set the deck ID if it is passed
     init_state = DeckBuilderState(
         messages=[HumanMessage(content="Initiate deck building request")],
         builder_mode=builder_mode,
-        original_deck=Deck(
-            id=deck_id
-        ) if deck_id else None
+        original_deck=Deck(id=deck_id) if deck_id else None,
     )
 
     match builder_mode:
@@ -49,18 +49,16 @@ def run_deckbuilder_agent(config: MTGConfig, builder_mode: BuilderMode, deck_id:
         "configurable": {
             "thread_id": f"deck_builder_{provider.provider_name}_{uuid.uuid4().hex}"
         },
-        "provider": provider
-   }
+    }
 
     # Keep track of the current state
     new_command = init_state
-
 
     while new_command:
         # Stream the graph execution
         print("→ sending to graph:", new_command)
         for event in graph.stream(new_command, config=graph_config, debug=True):
-            #print("====> new event")
+            # print("====> new event")
             new_command = None
             # Handle each event from the graph
             for step_name, step_output in event.items():
@@ -73,17 +71,13 @@ def run_deckbuilder_agent(config: MTGConfig, builder_mode: BuilderMode, deck_id:
                                     print(f"🤖: {message.content}")
                                 else:
                                     for entry in message.content:
-                                        print(f"🤖: {entry.get("text")}")
+                                        print(f"🤖: {entry.get('text')}")
                     case "tools":
                         if step_output.get("messages"):
                             for message in step_output["messages"]:
                                 if message.name != "prompt_user":
                                     print(f"🔧({message.name})")
                     case "__interrupt__":
-                        new_command = Command(resume=input(step_output[-1].value).strip())
-
-
-
-
-
-
+                        new_command = Command(
+                            resume=input(step_output[-1].value).strip()
+                        )
