@@ -15,11 +15,11 @@ class Card(BaseModel):
     mana_cost: str = Field(
         ...,
         description="Mana cost in MTG notation (e.g., '{2}{G}{G}'). "
-                    "Use an empty string for cards with no cost.",
+        "Use an empty string for cards with no cost.",
     )
     cmc: float = Field(
         ...,
-        description="Converted mana cost / mana value. Numeric so split cards, X-spells, etc. work."
+        description="Converted mana cost / mana value. Numeric so split cards, X-spells, etc. work.",
     )
     type_line: str = Field(
         ...,
@@ -27,7 +27,7 @@ class Card(BaseModel):
     )
     oracle_text: str = Field(
         ...,
-        description="Current Oracle rules text with newline literals (\\n) between paragraphs."
+        description="Current Oracle rules text with newline literals (\\n) between paragraphs.",
     )
     power: str | None = Field(
         None,
@@ -44,11 +44,11 @@ class Card(BaseModel):
     colors: list[str] = Field(
         ...,
         description="List of single-letter color abbreviations this card is printed with "
-                    "(e.g., ['G', 'U']). Empty list for colorless.",
+        "(e.g., ['G', 'U']). Empty list for colorless.",
     )
     color_identity: list[str] = Field(
         ...,
-        description="Color identity for Commander (rules 903.4); may include colors not in `colors`."
+        description="Color identity for Commander (rules 903.4); may include colors not in `colors`.",
     )
     commander_legality: str = Field(
         ...,
@@ -68,15 +68,17 @@ class Card(BaseModel):
     )
     quantity: int = Field(
         default=1,
-        description="Number of copies of this card in a given deck. Defaults to 1"
+        description="Number of copies of this card in a given deck. Defaults to 1",
     )
 
     model_config = {
-        "extra": "forbid",   # disallow unknown keys
+        "extra": "forbid",  # disallow unknown keys
     }
+
 
 class Deck(BaseModel):
     """A full Commander deck with game-relevant metadata."""
+
     id: str | None = Field(
         default=None,
         description="Scryfall UUID for this deck (e.g., '0001f1ef-b957-4a55-b47f-14839cdbab6f').",
@@ -100,8 +102,9 @@ class Deck(BaseModel):
     )
 
     model_config = {
-        "extra": "forbid",   # disallow unknown keys
+        "extra": "forbid",  # disallow unknown keys
     }
+
 
 class ArchidektDeck(BaseModel):
     name: str = Field(description="Name of the deck in archidekt")
@@ -115,7 +118,18 @@ class ArchidektDeck(BaseModel):
         "extra": "allow",
     }
 
+
 class CardSuggestion(BaseModel):
     name: str = Field(description="Name of the card suggested")
-    quantity: int = Field(description="Quantity of the card suggested. Is positive if the card is being added, negative if the card is being removed")
-    reason: str = Field(description="Reason for the suggestion. This should be a short explanation of why the card is being added or removed")
+    quantity: int = Field(
+        description="Quantity of the card suggested. Is positive if the card is being added, negative if the card is being removed"
+    )
+    reason: str = Field(
+        description="Reason for the suggestion. This should be a short explanation of why the card is being added or removed"
+    )
+
+
+class ValidatedCardSuggestion(CardSuggestion):
+    card: Card = Field(
+        description="The validated card data for the card being suggested"
+    )

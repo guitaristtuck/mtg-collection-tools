@@ -12,7 +12,8 @@
   },
   "mounts": [
     "source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly,type=bind",
-    "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/mtg,target=/root/.config/mtg,type=bind,consistency=cached"
   ],
   "customizations": {
     "vscode": {

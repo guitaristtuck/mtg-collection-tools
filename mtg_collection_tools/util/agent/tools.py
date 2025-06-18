@@ -7,8 +7,13 @@ from langgraph.types import Command, interrupt
 from pydantic import BaseModel
 
 from mtg_collection_tools.util.models.agent import BuilderMode, DeckBuilderState
-from mtg_collection_tools.util.models.mtg import CardSuggestion, Deck
+from mtg_collection_tools.util.models.mtg import (
+    CardSuggestion,
+    Deck,
+    ValidatedCardSuggestion,
+)
 from mtg_collection_tools.util.providers.base import BaseProvider
+from mtg_collection_tools.util.scryfall.api import ScryfallApi
 
 
 @tool
@@ -28,9 +33,38 @@ def save_card_suggestions(
     """
     # TODO: This should also look up scryfall IDs for the cards and add them to the suggestions. This should also
     # be able to check if the card is in the user's collection and give back an error if it is not.
+    scryfall = ScryfallApi()
+    validated_suggestions = []
+
+    scryfall_cards, not_found = scryfall.search_for_exact_cards_by_name(
+        [suggestion.name for suggestion in suggestions]
+    )
+
+    if len(not_found) > 0:
+        raise ValueError(
+            f"The following cards were not found in scryfall: {', '.join(not_found)}. This suggests that these card names are hallucinated."
+        )
+
+    if len(scryfall_cards) != len(suggestions):
+        raise ValueError(
+            f"The number of scryfall cards found ({len(scryfall_cards)}) does not match the number of suggestions ({len(suggestions)}). This suggests a programming error in the tool."
+        )
+
+    for scryfall_card, suggestion in zip(scryfall_cards, suggestions):
+        validated_card = scryfall_card
+        validated_card.quantity = suggestion.quantity
+        validated_suggestions.append(
+            ValidatedCardSuggestion(
+                name=validated_card.name,
+                quantity=suggestion.quantity,
+                reason=suggestion.reason,
+                card=validated_card,
+            )
+        )
+
     return Command(
         update={
-            "card_suggestions": suggestions,
+            "card_suggestions": validated_suggestions,
             "messages": [
                 ToolMessage(
                     content="Saved new card suggestions to graph state",
