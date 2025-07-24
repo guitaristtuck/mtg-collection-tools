@@ -1,5 +1,6 @@
 import posixpath
 from pathlib import Path, PosixPath
+from typing import Any
 
 import requests
 from rich.progress import (

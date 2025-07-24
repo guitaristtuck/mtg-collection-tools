@@ -21,6 +21,9 @@ def save_card_suggestions(
     suggestions: Annotated[
         list[CardSuggestion], "List of card suggestions to save to the graph state"
     ],
+    must_be_in_collection: Annotated[
+        bool, "Whether the card must be in the user's collection"
+    ],
     state: Annotated[DeckBuilderState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command[Literal["altered_deck"]]:

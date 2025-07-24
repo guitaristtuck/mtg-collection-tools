@@ -12,6 +12,7 @@ class Card(BaseModel):
         description="Scryfall UUID for this card (e.g., '0001f1ef-b957-4a55-b47f-14839cdbab6f').",
     )
     name: str = Field(..., description="Card’s printed English name.")
+    set_code: str = Field(..., description="Set code of the card")
     mana_cost: str = Field(
         ...,
         description="Mana cost in MTG notation (e.g., '{2}{G}{G}'). "

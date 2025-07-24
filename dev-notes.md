@@ -1,8 +1,10 @@
 # Archidekt API Notes
 
 ## Log In
+
 POST https://archidekt.com/api/rest-auth/login/
 payload:
+
 ```
 {
   "username": "guitaristtuck",
@@ -11,6 +13,7 @@ payload:
 ```
 
 response:
+
 ```
 {
   "access_token": "xxxx",
@@ -90,7 +93,7 @@ response:
         "id": 10754754,
         "private": false,
         "featured": "https://storage.googleapis.com/archidekt-card-images/otc/03a7e79f-625a-49ac-9cb1-e1fe5f51f5a0_art_crop.jpg",
-        "customFeatured": "",
+        "customFeatured": "",tools
         "viewCount": 24
       },
       {
@@ -186,7 +189,7 @@ response:
     "notificationCount": 2,
     "uniqueId": "4e1d48e303a65da7cd892ce16ee695a79c6e12ed25557f1c0d82a93e4dbe9b67",
     "patreonAccount": null,
-    "accountSettings": {
+    "accountSettings": {tools
       "id": 243720,
       "siteKeybinds": 0,
       "siteTheme": 1,
@@ -218,8 +221,10 @@ response:
 ```
 
 ## Create Folder
+
 POST https://archidekt.com/api/decks/folders/
 payload:
+
 ```
 {
   "name":"testing 123",
@@ -227,7 +232,9 @@ payload:
   "parentFolder":"98377"
 }
 ```
+
 response:
+
 ```
 {
   "id":969047,
@@ -238,9 +245,11 @@ response:
 ```
 
 ## List Folders
+
 GET https://archidekt.com/api/decks/folders/{rootFolder}/
 rootFolder: get from login
 response:
+
 ```
 {
   "id": 346306,
@@ -314,8 +323,10 @@ response:
 ```
 
 ## Create Deck
+
 POST https://archidekt.com/api/decks/v2/
 payload:
+
 ```
 {
   "name": "api testing deck",
@@ -338,8 +349,10 @@ payload:
   }
 }
 ```
+
 response:
 201
+
 ```
 {
     "owner": {
@@ -374,9 +387,11 @@ response:
 }
 ```
 
-## Search Cards
-GET https://archidekt.com/api/cards/v2/?uids=71a5d8de-25f1-4070-a7a6-dc3f2339ce30,9ce66ebc-b39f-4b40-9d95-981629a5dd06
+## Search Cards In Collection
+
+GET https://archidekt.com/api/collection/v2/243732/?uids=71a5d8de-25f1-4070-a7a6-dc3f2339ce30,9ce66ebc-b39f-4b40-9d95-981629a5dd06
 response:
+
 ```
 {
   "count": 2,
@@ -529,7 +544,7 @@ response:
       "flavor": "\"Lord Kefka's treasure the treasure... Return the treasure...\"\n—Kefka's cultists",
       "games": [],
       "options": [
-        "Normal",
+        "Normal",validated_suggestions
         "Foil"
       ],
       "scryfallImageHash": "1747216851",
@@ -624,52 +639,154 @@ response:
 }
 ```
 
+        "Foil"
+      ],
+      "scryfallImageHash": "1747216851",
+      "oracleCard": {
+        "id": 20089,
+        "cmc": 2,
+        "colorIdentity": [],
+        "colors": [],
+        "edhrecRank": 3,
+        "faces": [],
+        "layout": "normal",
+        "uid": null,
+        "legalities": {
+          "alchemy": "legal",
+          "legacy": "legal",
+          "oldschool": "not_legal",
+          "modern": "legal",
+          "vintage": "legal",
+          "oathbreaker": "legal",
+          "1v1": "legal",
+          "historicbrawl": "legal",
+          "premodern": "not_legal",
+          "historic": "legal",
+          "commander": "legal",
+          "paupercommander": "legal",
+          "gladiator": "legal",
+          "explorer": "legal",
+          "brawl": "legal",
+          "penny": "not_legal",
+          "pioneer": "legal",
+          "duel": "legal",
+          "pauper": "legal",
+          "standard": "not_legal",
+          "future": "not_legal",
+          "predh": "not_legal",
+          "timeless": "legal",
+          "canlander": "legal"
+        },
+        "manaCost": "{2}",
+        "manaProduction": {
+          "W": 1,
+          "U": 1,
+          "B": 1,
+          "R": 1,
+          "G": 1,
+          "C": null
+        },
+        "name": "Arcane Signet",
+        "power": "",
+        "salt": 0.82,
+        "subTypes": [],
+        "superTypes": [],
+        "text": "{T}: Add one mana of any color in your commander's color identity.",
+        "tokens": [],
+        "toughness": "",
+        "types": [
+          "Artifact"
+        ],
+        "loyalty": null,
+        "canlanderPoints": null,
+        "defaultCategory": "Ramp",
+        "gameChanger": false,
+        "extraTurns": false,
+        "tutor": false,
+        "massLandDenial": false,
+        "twoCardComboSingelton": false,
+        "twoCardComboIds": [],
+        "atomicCombos": [],
+        "potentialCombos": []
+      },
+      "owned": 0,
+      "prices": {
+        "ck": 0.59,
+        "ckfoil": 0.0,
+        "cm": 0.0,
+        "cmfoil": 0.0,
+        "mtgo": 0.0,
+        "mtgofoil": 0.0,
+        "tcg": 3.74,
+        "tcgfoil": 0.0,
+        "scg": 1.99,
+        "scgfoil": 0.0,
+        "mp": 0.0,
+        "mpfoil": 0.0,
+        "tcgLand": 0.0,
+        "tcgLandFoil": 0.0
+      },
+      "rarity": "common",
+      "globalCategories": []
+    }
+
+]
+}
+
+```
+
 ## Add Cards to Deck
 PATCH https://archidekt.com/api/decks/{deckID}/modifyCards/v2/
 payload:
 ```
+
 {
-    "cards": [
-        {
-            "action": "add",
-            "cardid": "142916",
-            "categories": [
-                "Land"
-            ],
-            "patchId": "DaKKGyCMtk",
-            "modifications": {
-                "quantity": 1,
-                "modifier": "Normal",
-                "customCmc": null,
-                "companion": false,
-                "flippedDefault": false,
-                "label": ",#656565"
-            }
-        }
-    ]
+"cards": [
+{
+"action": "add",
+"cardid": "142916",
+"categories": [
+"Land"
+],
+"patchId": "DaKKGyCMtk",
+"modifications": {
+"quantity": 1,
+"modifier": "Normal",
+"customCmc": null,
+"companion": false,
+"flippedDefault": false,
+"label": ",#656565"
 }
+}
+]
+}
+
 ```
 
 response:
 ```
+
 {
-    "add": [
-        {
-            "deckRelationId": 2208854980,
-            "patchId": "DaKKGyCMtk",
-            "categories": [
-                "Land"
-            ],
-            "quantity": 1,
-            "modifier": "Normal",
-            "customCmc": null,
-            "companion": false,
-            "flippedDefault": false,
-            "label": ",#656565",
-            "cardId": "142916",
-            "createdAt": "2025-05-19T04:24:19.159586+00:00"
-        }
-    ],
-    "createdCategories": []
+"add": [
+{
+"deckRelationId": 2208854980,
+"patchId": "DaKKGyCMtk",
+"categories": [
+"Land"
+],
+"quantity": 1,
+"modifier": "Normal",
+"customCmc": null,
+"companion": false,
+"flippedDefault": false,
+"label": ",#656565",
+"cardId": "142916",
+"createdAt": "2025-05-19T04:24:19.159586+00:00"
 }
+],
+"createdCategories": []
+}
+
+```
+
 ```

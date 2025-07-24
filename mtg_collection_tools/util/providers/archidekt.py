@@ -1,4 +1,5 @@
 import csv
+import json
 import time
 from functools import wraps
 from pathlib import Path
@@ -161,8 +162,9 @@ class ArchidektProvider(BaseProvider):
 
         # Extract the relevant fields from the JSON response
         card_data = {
-            "id": oracle_card.get("uid"),
+            "id": card_json.get("card").get("uid"),
             "name": oracle_card.get("name"),
+            "set_code": card_json.get("card").get("edition").get("editioncode"),
             "mana_cost": oracle_card.get("manaCost"),
             "cmc": oracle_card.get("cmc"),
             "type_line": build_type_line(oracle_card),
