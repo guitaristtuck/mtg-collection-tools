@@ -545,4 +545,35 @@ class ArchidektProvider(BaseProvider):
         return f"https://archidekt.com/decks/{deck_id}"
 
 
-            
+    @requires_auth
+    def get_matches_in_collection(self, cards: list[Card])-> dict[str,Any]:
+        """
+        Get the number of exact and other print matches for the given cards in the user's collection.
+
+        This takes a list of cards and returns a dictionary of card names to a dictionary of exact and other print quantities.
+
+        Returns:
+            dict[str,dict[str,int]]: Dictionary of card names to a dictionary of exact and other print quantities
+        """
+        # Create a search payload for the cards
+        # This will be a janky bunch of exact match searches joined with OR
+        # such as !"Goblin Guide" OR !"Goblin Guide" OR !"Goblin Guide"
+        search_payload = " OR ".join([f"!\"{card.name}\"" for card in cards])
+
+        response = requests.get(
+            url=f"{self.base_url}/collection/{self.collection_id}/v2/?syntaxQuery={search_payload}",
+            headers={"Authorization": f"JWT {self.jwt}"},
+        )
+
+        matches = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in cards}
+
+        for card in response.json().get("results",[]):
+            card_name = card.get("card").get("oracleCard").get("name")
+            card_uid = card.get("card").get("uid")
+
+            if card_uid in [card.id for card in cards]:
+                matches[card_name]["exact_print_quantity"] += 1
+            else:
+                matches[card_name]["other_print_quantity"] += 1
+
+        return matches

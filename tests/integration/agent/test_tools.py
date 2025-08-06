@@ -65,7 +65,7 @@ def test_save_card_suggestions():
         CardSuggestion(name="Swamp", quantity=-3, reason="Reducing black mana base"),
     ]
 
-    # Call the function manually with all required parameters
+    # Call the function manually with all required parameters# Call the function manually with all required parameters
     result = save_card_suggestions.invoke(
         {
             "suggestions": suggestions,
@@ -74,6 +74,9 @@ def test_save_card_suggestions():
             "tool_call_id": "fake_tool_call_id",
         }
     )
+
+    # Verify the result
+    assert len(result.update.get("card_suggestions")) == len(suggestions)
 
     # Verify the result
     assert len(result.update.get("card_suggestions")) == len(suggestions)

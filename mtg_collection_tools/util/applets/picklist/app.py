@@ -251,6 +251,13 @@ class DeckPicker(QWidget):
         self.quantity_label.setMinimumSize(200, 50)  # Smaller minimum size for quantity
         set_code_layout.addWidget(self.quantity_label)
         
+        # Collection status display (underneath quantity)
+        self.collection_status_label = QLabel()
+        self.collection_status_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.collection_status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.collection_status_label.setMinimumSize(200, 50)  # Same size as quantity
+        set_code_layout.addWidget(self.collection_status_label)
+        
         content_layout.addLayout(set_code_layout)
         
         layout.addLayout(content_layout)
@@ -283,7 +290,11 @@ class DeckPicker(QWidget):
         # Start bulk downloading all images
         self.start_bulk_download()
         
-                # Start displaying the first card
+        # Fetch collection data for all cards
+        self.collection_data = {}
+        self.fetch_collection_data()
+        
+        # Start displaying the first card
         self.update_display()
         
         # Set initial fonts
@@ -303,6 +314,7 @@ class DeckPicker(QWidget):
             'card_name': int(base_size * 1.0),      # Standard size for card name
             'set_code': int(base_size * 2.5),       # Very large for set code
             'quantity': int(base_size * 1.2),       # Medium size for quantity
+            'collection_status': int(base_size * 1.0), # Same as card name
             'position': int(base_size * 0.9),       # Slightly smaller
             'button': int(base_size * 0.8),         # Smaller for buttons
             'progress': int(base_size * 0.8),       # Same as buttons
@@ -333,6 +345,11 @@ class DeckPicker(QWidget):
         quantity_font = QFont()
         quantity_font.setPointSize(font_sizes['quantity'])
         self.quantity_label.setFont(quantity_font)
+        
+        # Update collection status font
+        collection_status_font = QFont()
+        collection_status_font.setPointSize(font_sizes['collection_status'])
+        self.collection_status_label.setFont(collection_status_font)
         
         # Update position label font
         pos_font = QFont()
@@ -384,6 +401,11 @@ class DeckPicker(QWidget):
             
             # Update quantity (underneath set code)
             self.quantity_label.setText(f"count: {card.quantity}x")
+            
+            # Update collection status (underneath quantity)
+            status_text, status_color = self.get_collection_status_text(card.name)
+            self.collection_status_label.setText(status_text)
+            self.collection_status_label.setStyleSheet(f"color: rgb({status_color.red()}, {status_color.green()}, {status_color.blue()})")
             
             # Update position label
             self.position_label.setText(f"Card {self.card_index + 1} of {len(self.deck.cards)}")
@@ -447,6 +469,34 @@ class DeckPicker(QWidget):
         if self.bulk_downloader and self.bulk_downloader.isRunning():
             self.bulk_downloader.quit()
             self.bulk_downloader.wait()
+    
+    def fetch_collection_data(self):
+        """Fetch collection data for all cards in the deck"""
+        try:
+            # Check if the provider has the get_matches_in_collection method
+            if hasattr(self.provider, 'get_matches_in_collection'):
+                self.collection_data = self.provider.get_matches_in_collection(self.deck.cards)
+            else:
+                # If provider doesn't support collection checking, set empty data
+                self.collection_data = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in self.deck.cards}
+        except Exception as e:
+            print(f"Failed to fetch collection data: {e}")
+            # Set empty data on error
+            self.collection_data = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in self.deck.cards}
+    
+    def get_collection_status_text(self, card_name: str) -> tuple[str, QColor]:
+        """Get the collection status text and color for a card"""
+        if card_name not in self.collection_data:
+            return "Not in collection", QColor(255, 0, 0)  # Red
+        
+        data = self.collection_data[card_name]
+        
+        if data["exact_print_quantity"] > 0:
+            return f"In collection: {data['exact_print_quantity']}", QColor(0, 255, 0)  # Green
+        elif data["other_print_quantity"] > 0:
+            return f"Other printings: {data['other_print_quantity']}", QColor(255, 255, 0)  # Yellow
+        else:
+            return "Not in collection", QColor(255, 0, 0)  # Red
     
     def on_next(self):
         """Move to the next card"""

@@ -389,7 +389,7 @@ response:
 
 ## Search Cards In Collection
 
-GET https://archidekt.com/api/collection/v2/243732/?uids=71a5d8de-25f1-4070-a7a6-dc3f2339ce30,9ce66ebc-b39f-4b40-9d95-981629a5dd06
+GET https://archidekt.com/api/collection/243732/v2/?uids=71a5d8de-25f1-4070-a7a6-dc3f2339ce30,9ce66ebc-b39f-4b40-9d95-981629a5dd06
 response:
 
 ```
@@ -442,7 +442,7 @@ response:
         "legalities": {
           "alchemy": "not_legal",
           "legacy": "legal",
-          "oldschool": "not_legal",
+          "oldschool": "not_legal",243732
           "modern": "not_legal",
           "vintage": "legal",
           "oathbreaker": "legal",
@@ -506,15 +506,7 @@ response:
         "cm": 0.11,
         "cmfoil": 0.0,
         "mtgo": 0.0,
-        "mtgofoil": 0.0,
-        "tcg": 0.18,
-        "tcgfoil": 0.0,
-        "scg": 0.29,
-        "scgfoil": 0.0,
-        "mp": 0.15,
-        "mpfoil": 0.0,
-        "tcgLand": 10.0,
-        "tcgLandFoil": 0.0
+        "mtgofoil": 0.0,243732
       },
       "rarity": "uncommon",
       "globalCategories": []
