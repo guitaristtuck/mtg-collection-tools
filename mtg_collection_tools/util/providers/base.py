@@ -4,7 +4,7 @@ from pathlib import Path
 from langchain.tools import tool
 from pydantic import SecretStr
 
-from mtg_collection_tools.util.models.mtg import Deck
+from mtg_collection_tools.util.models.mtg import Card, Deck
 
 
 class BaseProvider(ABC):
@@ -60,5 +60,18 @@ class BaseProvider(ABC):
 
         Returns:
             str: url of the new deck
+        """
+        pass
+
+    @abstractmethod
+    def get_cards_in_collection_for_sets(self, sets: list[str]) -> list[Card]:
+        """
+        Get the cards in the user's collection for the given sets.
+
+        Args:
+            sets (list[str]): List of set codes to get cards for
+
+        Returns:
+            list[Card]: List of cards in the user's collection for the given sets
         """
         pass

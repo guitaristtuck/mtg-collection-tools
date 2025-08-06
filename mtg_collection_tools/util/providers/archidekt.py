@@ -577,3 +577,35 @@ class ArchidektProvider(BaseProvider):
                 matches[card_name]["other_print_quantity"] += 1
 
         return matches
+
+    @requires_auth
+    def get_cards_in_collection_for_sets(self, sets: list[str])-> list[Card]:
+        """
+        Get the cards in the user's collection for the given sets.
+
+        These will be returned in alphabetical order by card name, with all sets intermixed.
+
+        Returns:
+            list[Card]: List of cards in the user's collection for the given sets
+        """
+        search_payload = " OR ".join([f"s:{set}" for set in sets])
+
+        page = 1
+        total_pages = 999999
+        cards = []
+
+        while page <= total_pages:
+            response = requests.get(
+                url=f"{self.base_url}/collection/{self.collection_id}/v2/",
+                params={"collectionOrderBy": "name", "orderDirection": "ascending", "syntaxQuery": search_payload, "page": page},
+                headers={"Authorization": f"JWT {self.jwt}"},
+            )
+            response.raise_for_status()
+            raw = response.json()
+
+            total_pages = raw["totalPages"]
+            page += 1
+
+            cards.extend([self.map_card_json_to_model(c) for c in raw.get("results",[])])
+
+        return cards

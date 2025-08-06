@@ -40,3 +40,13 @@ def test_get_collection_index(provider):
     result = provider.get_matches_in_collection(cards=deck.cards)
 
     assert len(result.keys()) == len(deck.cards)
+    print(result)
+
+def test_get_cards_in_collection_for_sets(provider):
+    """
+    Test that the get cards in collection for sets tool works as expected.
+    """
+    cards = provider.get_cards_in_collection_for_sets(sets=["eoe","eos","eoc"])
+
+    assert len(cards) > 0
+    print([f"{card.name}: {card.set_code}" for card in cards])
