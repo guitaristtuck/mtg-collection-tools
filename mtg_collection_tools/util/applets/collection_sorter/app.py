@@ -83,7 +83,15 @@ def apply_dark_theme(app: QApplication):
     dark_palette = QPalette()
     
     # Dark theme colors
-    dark_palette.setColor(QPalette.ColuorRole.ButtonText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
     dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
     dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
     dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
@@ -138,7 +146,7 @@ class BulkImageDownloader(QThread):
         self._rate_limiter = RateLimiter(max_calls=10, period=1.0)
         
     def download_single_image(self, card_id: str) -> tuple[str, bytes | None]:
-        """Download a single image and return (card_id, pixmap)"""
+        """Download a single image and return (card_id, raw_bytes)"""
         try:
             # Enforce global rate limit for the pool
             self._rate_limiter.acquire()
@@ -150,7 +158,11 @@ class BulkImageDownloader(QThread):
             
             # Return raw bytes; construct QPixmap in the UI thread
             if not response.content:
-                print(f"Empty response conut:
+                print(f"Empty response content for card {card_id}")
+                return card_id, None
+            
+            return card_id, response.content
+        except requests.exceptions.Timeout:
             print(f"Timeout while downloading image for card {card_id}")
             return card_id, None
         except requests.exceptions.RequestException as e:
@@ -182,7 +194,15 @@ class BulkImageDownloader(QThread):
                 completed += 1
                 self.progress_updated.emit(completed, total)
         
-        # Emit completion signalu
+        # Emit completion signal
+        self.download_complete.emit()
+
+
+class ImageDownloader(QThread):
+    """Thread for downloading card images in the background"""
+    image_downloaded = pyqtSignal(str, QPixmap)  # card_id, pixmap
+    
+    def __init__(self, card_id: str):
         super().__init__()
         self.card_id = card_id
         
@@ -191,7 +211,7 @@ class BulkImageDownloader(QThread):
         try:
             # Construct the Scryfall image URL
             url = f"https://api.scryfall.com/cards/{self.card_id}?format=image&version=normal"
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
             
             # Create QPixmap from the image data
@@ -217,7 +237,16 @@ class CollectionSorter(QWidget):
         super(CollectionSorter, self).__init__(parent)
         self.set_codes = set_codes
         self.provider = provider
-        self.cards = sort_u
+        self.cards = sort_cards(cards=self.provider.get_cards_in_collection_for_sets(set_codes))
+        self.card_index = 0
+        self.setWindowTitle("Collection Sorter")
+        
+        # Image cache to store downloaded images
+        self.image_cache = {}
+        self.bulk_downloader = None
+        
+        # Connect the destroyed signal to clean up threads
+        self.destroyed.connect(self.cleanup_threads)
         # Enable keyboard focus for this widget
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
@@ -328,7 +357,6 @@ class CollectionSorter(QWidget):
         }
     
     def update_fonts(self):
-        """Update all font sizes based on current window size"""
         font_sizes = self.calculate_font_sizes()
         
         # Update set codes font
