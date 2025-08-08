@@ -1,3 +1,6 @@
+import threading
+import time
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -18,6 +21,39 @@ from PyQt6.QtWidgets import (
 
 from mtg_collection_tools.util.models.mtg import Card
 from mtg_collection_tools.util.providers.base import BaseProvider
+
+
+class RateLimiter:
+    """Thread-safe sliding-window rate limiter.
+
+    Ensures no more than `max_calls` occur within any rolling `period` seconds.
+    """
+
+    def __init__(self, max_calls: int, period: float):
+        self.max_calls = max_calls
+        self.period = period
+        self._lock = threading.Lock()
+        self._timestamps: deque[float] = deque(maxlen=max_calls)
+
+    def acquire(self):
+        """Block until a slot is available under the rate limit."""
+        while True:
+            now = time.monotonic()
+            with self._lock:
+                # Drop timestamps that are older than the window
+                while self._timestamps and (now - self._timestamps[0]) > self.period:
+                    self._timestamps.popleft()
+
+                if len(self._timestamps) < self.max_calls:
+                    self._timestamps.append(now)
+                    return
+
+                # Need to wait until the oldest call falls out of the window
+                wait_for = self.period - (now - self._timestamps[0])
+
+            # Sleep outside the lock
+            if wait_for > 0:
+                time.sleep(wait_for)
 
 
 def is_dark_mode() -> bool:
@@ -47,15 +83,7 @@ def apply_dark_theme(app: QApplication):
     dark_palette = QPalette()
     
     # Dark theme colors
-    dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
-    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
-    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
-    dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
-    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColuorRole.ButtonText, QColor(255, 255, 255))
     dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
     dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
     dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
@@ -104,21 +132,30 @@ class BulkImageDownloader(QThread):
         super().__init__()
         self.card_ids = card_ids
         self.downloaded_images = {}
+        self.downloaded_image_bytes: dict[str, bytes] = {}
         self.max_workers = max_workers
+        # Shared limiter across all worker threads: 10 req/sec total
+        self._rate_limiter = RateLimiter(max_calls=10, period=1.0)
         
-    def download_single_image(self, card_id: str) -> tuple[str, QPixmap | None]:
+    def download_single_image(self, card_id: str) -> tuple[str, bytes | None]:
         """Download a single image and return (card_id, pixmap)"""
         try:
+            # Enforce global rate limit for the pool
+            self._rate_limiter.acquire()
+            
             # Construct the Scryfall image URL
             url = f"https://api.scryfall.com/cards/{card_id}?format=image&version=normal"
-            response = requests.get(url)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
             
-            # Create QPixmap from the image data
-            pixmap = QPixmap()
-            pixmap.loadFromData(response.content)
-            
-            return card_id, pixmap
+            # Return raw bytes; construct QPixmap in the UI thread
+            if not response.content:
+                print(f"Empty response conut:
+            print(f"Timeout while downloading image for card {card_id}")
+            return card_id, None
+        except requests.exceptions.RequestException as e:
+            print(f"Request error for card {card_id}: {e}")
+            return card_id, None
         except Exception as e:
             print(f"Failed to download image for card {card_id}: {e}")
             return card_id, None
@@ -138,22 +175,14 @@ class BulkImageDownloader(QThread):
             
             # Process completed downloads as they finish
             for future in as_completed(future_to_card_id):
-                card_id, pixmap = future.result()
-                if pixmap is not None:
-                    self.downloaded_images[card_id] = pixmap
+                card_id, data = future.result()
+                if data is not None:
+                    self.downloaded_image_bytes[card_id] = data
                 
                 completed += 1
                 self.progress_updated.emit(completed, total)
         
-        # Emit completion signal
-        self.download_complete.emit()
-
-
-class ImageDownloader(QThread):
-    """Thread for downloading card images in the background"""
-    image_downloaded = pyqtSignal(str, QPixmap)  # card_id, pixmap
-    
-    def __init__(self, card_id: str):
+        # Emit completion signalu
         super().__init__()
         self.card_id = card_id
         
@@ -188,17 +217,7 @@ class CollectionSorter(QWidget):
         super(CollectionSorter, self).__init__(parent)
         self.set_codes = set_codes
         self.provider = provider
-        self.cards = sort_cards(cards=self.provider.get_cards_in_collection_for_sets(set_codes))
-        self.card_index = 0
-        self.setWindowTitle("Collection Sorter")
-        
-        # Image cache to store downloaded images
-        self.image_cache = {}
-        self.bulk_downloader = None
-        
-        # Connect the destroyed signal to clean up threads
-        self.destroyed.connect(self.cleanup_threads)
-        
+        self.cards = sort_u
         # Enable keyboard focus for this widget
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
@@ -437,7 +456,11 @@ class CollectionSorter(QWidget):
         
         # Store all downloaded images in cache
         if self.bulk_downloader:
-            self.image_cache.update(self.bulk_downloader.downloaded_images)
+            # Convert bytes to QPixmap on the UI thread, then cache
+            for card_id, data in self.bulk_downloader.downloaded_image_bytes.items():
+                pixmap = QPixmap()
+                if pixmap.loadFromData(data):
+                    self.image_cache[card_id] = pixmap
         
         # Update display to show the first card's image
         self.update_display()
