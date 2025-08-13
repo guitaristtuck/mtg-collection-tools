@@ -1,3 +1,4 @@
+import json
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import cast
@@ -472,17 +473,13 @@ class DeckPicker(QWidget):
     
     def fetch_collection_data(self):
         """Fetch collection data for all cards in the deck"""
-        try:
-            # Check if the provider has the get_matches_in_collection method
-            if hasattr(self.provider, 'get_matches_in_collection'):
-                self.collection_data = self.provider.get_matches_in_collection(self.deck.cards)
-            else:
-                # If provider doesn't support collection checking, set empty data
-                self.collection_data = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in self.deck.cards}
-        except Exception as e:
-            print(f"Failed to fetch collection data: {e}")
-            # Set empty data on error
+        # Check if the provider has the get_matches_in_collection method
+        if hasattr(self.provider, 'get_matches_in_collection'):
+            self.collection_data = self.provider.get_matches_in_collection(self.deck.cards)
+        else:
+            # If provider doesn't support collection checking, set empty data
             self.collection_data = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in self.deck.cards}
+
     
     def get_collection_status_text(self, card_name: str) -> tuple[str, QColor]:
         """Get the collection status text and color for a card"""

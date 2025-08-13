@@ -555,26 +555,75 @@ class ArchidektProvider(BaseProvider):
         Returns:
             dict[str,dict[str,int]]: Dictionary of card names to a dictionary of exact and other print quantities
         """
-        # Create a search payload for the cards
-        # This will be a janky bunch of exact match searches joined with OR
-        # such as !"Goblin Guide" OR !"Goblin Guide" OR !"Goblin Guide"
-        search_payload = " OR ".join([f"!\"{card.name}\"" for card in cards])
+        # Create a search payload for the cards in chunks that do not exceed 1000 characters
+        # Each term looks like !"Card Name" and chunks are joined with " OR " and wrapped in parentheses
+        terms = [f"!\"{card.name}\"" for card in cards]
+        JOINER = " OR "
+        WRAP_EXTRA = 2  # parentheses
+        MAX_LEN = 1000
 
-        response = requests.get(
-            url=f"{self.base_url}/collection/{self.collection_id}/v2/?syntaxQuery={search_payload}",
-            headers={"Authorization": f"JWT {self.jwt}"},
-        )
+        def build_chunks(items: list[str]) -> list[list[str]]:
+            chunks: list[list[str]] = []
+            current: list[str] = []
+            current_len = WRAP_EXTRA  # account for parentheses
+
+            for term in items:
+                # length if we add this term (include joiner if not first)
+                add_len = len(term) if not current else len(JOINER) + len(term)
+                if current and (current_len + add_len) > MAX_LEN:
+                    chunks.append(current)
+                    current = [term]
+                    current_len = WRAP_EXTRA + len(term)
+                elif not current and (WRAP_EXTRA + len(term)) > MAX_LEN:
+                    # Single term exceeds limit; cannot split further safely
+                    # Put it as its own chunk to avoid infinite loop
+                    chunks.append([term])
+                    current = []
+                    current_len = WRAP_EXTRA
+                else:
+                    current.append(term)
+                    current_len += add_len
+
+            if current:
+                chunks.append(current)
+            return chunks
+
+        term_chunks = build_chunks(terms)
 
         matches = {card.name: {"exact_print_quantity": 0, "other_print_quantity": 0} for card in cards}
+        target_ids = {card.id for card in cards}
 
-        for card in response.json().get("results",[]):
-            card_name = card.get("card").get("oracleCard").get("name")
-            card_uid = card.get("card").get("uid")
+        for chunk_idx, chunk_terms in enumerate(term_chunks, start=1):
+            search_payload = "(" + JOINER.join(chunk_terms) + ")"
 
-            if card_uid in [card.id for card in cards]:
-                matches[card_name]["exact_print_quantity"] += 1
-            else:
-                matches[card_name]["other_print_quantity"] += 1
+            page = 1
+            total_pages = 999999
+
+            while page <= total_pages:
+                response = requests.get(
+                    url=f"{self.base_url}/collection/{self.collection_id}/v2/",
+                    params={
+                        "collectionOrderBy": "name",
+                        "orderDirection": "ascending",
+                        "syntaxQuery": search_payload,
+                        "page": page,
+                    },
+                    headers={"Authorization": f"JWT {self.jwt}"},
+                )
+                response.raise_for_status()
+                raw = response.json()
+
+                total_pages = raw.get("totalPages", 1)
+                page += 1
+
+                for card in raw.get("results", []):
+                    card_name = card.get("card").get("oracleCard").get("name")
+                    card_uid = card.get("card").get("uid")
+
+                    if card_uid in target_ids:
+                        matches[card_name]["exact_print_quantity"] += 1
+                    else:
+                        matches[card_name]["other_print_quantity"] += 1
 
         return matches
 
